@@ -1,0 +1,17 @@
+[package]
+name = "neon_descent"
+version = "0.1.0"
+edition = "2021"
+authors = ["J. Collins"]
+
+[[bin]]
+name = "neon_descent"
+path = "src/main.rs"
+
+[dependencies]
+macroquad = "0.4"
+image = { version = "0.24", default-features = false, features = ["png"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+toml = "0.8"
+libc = "0.2"

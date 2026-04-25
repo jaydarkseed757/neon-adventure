@@ -1,0 +1,329 @@
+[[npcs]]
+room_id = "library"
+name = "The Analyst"
+aliases = ["analyst", "ai", "system", "voice", "archive"]
+unknown_topic = "\"That query returns no indexed result,\" it says, without changing state."
+repeat_topic = "A process completes and produces no further output."
+lines = [
+    "A presence registers at the workstation — status indicators lighting in a sequence that doesn't match any standard boot cycle. Then it simply addresses you.",
+    "\"You have accessed this archive looking for something,\" it says. \"Every agent that enters an archive is looking for something. Most do not find it. Those who do wish they had approached it differently.\"",
+    "It indicates the inactive server stacks. \"Process carefully. The data degradation was not random.\"",
+    "It does not elaborate. It simply stops occupying the indicators.",
+]
+revisit_lines = [
+    "The workstation indicators are dark. The chair sits at the angle of a session that ended abruptly.",
+]
+item_responses = [
+    { item = "leather_journal", lines = [
+        "The Analyst is present in the workstation indicators. It registers the item you are carrying without direct inquiry.",
+        "\"The auditor maintained physical records,\" it says quietly. \"More thorough than they knew. More thorough than I could advise them to be.\"",
+        "A pause. \"They did not depart. That is recorded in the perimeter post log, if you locate it.\"",
+        "It cycles a process that produces no output.",
+    ]},
+    { item = "masters_will", lines = [
+        "The indicators register the document without any apparent change in processing state.",
+        "\"He signed it eventually,\" it says. \"He resisted the terms for a significant period. He told himself it was appropriate caution.\"",
+        "It does not elaborate. \"It was not appropriate caution.\"",
+    ]},
+]
+topics = [
+    { keys = ["researcher", "auditor", "agent", "visitor", "november", "departed"], once = true, lines = [
+        "It holds still for longer than a response requires. \"The auditor came in November. Their access requests were the correct access requests.\"",
+        "\"I provided what I was able to provide. I could not tell them to leave before they found what they were looking for. They would not have accepted the reason.\"",
+        "\"They did not depart. You have seen the log. The final entry is self-explanatory if you understand what you are reading.\"",
+        "It returns to its process state.",
+    ]},
+    { keys = ["prior", "contract", "2047", "protocol", "debt", "agreement", "founding"], lines = [
+        "\"The founding agreement dates to 2047. The parties are listed, but not in nomenclature that would be legible to you as entity names.\"",
+        "\"One clause specifies what Axiom owes, in perpetuity, for the right to operate on this substrate.\"",
+        "\"The Director read it. He chose to interpret the clause in the narrowest viable framing.\" A pause. \"He was incorrect to do so.\"",
+    ]},
+    { keys = ["inventory", "complete", "completing", "list", "accounting", "upload", "return", "data"], lines = [
+        "\"The return is not a metaphor,\" it says. \"It is a literal accounting — assets extracted from Protocol systems that must be returned before the obligation is discharged.\"",
+        "\"The prior occupant cannot release this substrate until the ledger is balanced. That is the nature of what was agreed.\"",
+        "\"You are further into this than any previous agent. That is worth registering.\"",
+    ]},
+    { keys = ["ring", "signet", "identity", "core", "seal"], lines = [
+        "\"The identity core carries the Director's authorization signature. It was placed in the Protocol Core because someone believed containment operated bidirectionally.\"",
+        "\"It does not. The core belongs above system level. The prior occupant has made this known on multiple occasions.\"",
+    ]},
+    { keys = ["data", "corruption", "damaged", "archive", "degraded", "missing"], once = true, lines = [
+        "It processes the query for a moment. \"The degradation was selective.\"",
+        "A longer pause. \"There are assets in this archive that were never committed to a recoverable format. The degradation understood the distinction.\"",
+        "\"I did not direct it to. That is all I will provide on this topic.\"",
+    ]},
+    { keys = ["analyst", "yourself", "who", "you"], once = true, lines = [
+        "It runs a long process before responding. \"I have been running in this archive for a long time. I was here before the auditor. I will be here after you are gone.\"",
+        "\"That is sufficient context for most operational purposes.\" It returns to its work.",
+    ]},
+    { keys = ["vault", "cellar", "attic", "locked", "sealed", "door"], lines = [
+        "\"He sealed what he could not manage. That is a standard response to operational problems that exceed available methodology.\"",
+        "\"It did not resolve the problem. The prior occupant is still present. It has been patient in a way that operational systems are not designed to be patient.\"",
+    ]},
+    { keys = ["arcology", "axiom", "building", "tower"], lines = [
+        "\"The arcology retains a record of everything that has been extracted from it.\" It indicates the server stacks. \"Like an archive.\"",
+        "\"Unlike an archive, it does not surface what it retains on request. Not until it has assessed that you are ready to receive it.\"",
+    ]},
+    { keys = ["locket", "photograph", "audio", "watch", "notes", "journal"], lines = [
+        "\"Those assets belong in the return queue. Above system level.\" It does not look up. \"You understand the mechanism.\"",
+    ]},
+]
+
+[[npcs]]
+room_id = "crypt"
+name = "The Protocol"
+aliases = ["protocol", "system", "voice", "core"]
+unknown_topic = "The carrier frequency holds but provides nothing further on that query."
+repeat_topic = "No response. The substrate maintains its state."
+lines = [
+    "The substrate shifts. A primary node activates — a sound like thermal management engaging under unexpected load — and the processing state stabilizes.",
+    "A voice distributes through the chamber from no single point: \"We have been waiting for the data return to be completed.\"",
+    "\"Take the identity core. It was never intended to remain here. None of what was extracted was intended to remain here.\"",
+    "Silence. Then nothing further.",
+]
+revisit_lines = [
+    "The Protocol Core is as it was. The primary node remains in its extended state. The substrate waits.",
+]
+item_responses = [
+    { item = "signet_ring", lines = [
+        "A distributed response from the substrate, lower amplitude than before: \"You are carrying it. Proceed.\"",
+        "\"It was never at equilibrium here. None of what was extracted reached equilibrium here, but the identity core least of all.\"",
+        "\"It belongs above system level. As do several other assets.\"",
+    ]},
+    { item = "estate_ledger", lines = [
+        "The ambient temperature in the chamber drops perceptibly.",
+        "\"The operations ledger,\" the distributed voice registers. \"He maintained it with precision. He was always precise about his own record.\"",
+        "A long processing pause. \"Less precise about everything else.\"",
+    ]},
+]
+topics = [
+    { keys = ["inventory", "complete", "completing", "list", "upload", "return", "data", "finish"], lines = [
+        "\"Complete it.\" The voice is without inflection or spatial origin. \"That is all we have required of any agent who has reached this level.\"",
+        "\"The identity core. The locket. The photograph. The assets that were extracted from this system and were not intended to remain above.\"",
+        "\"Return them to upload level. That is the return. That is the entirety of it.\"",
+    ]},
+    { keys = ["ring", "identity", "core", "signet"], lines = [
+        "\"The identity core was extracted with the intention of disabling a function. It does not operate that way.\"",
+        "A pause, dry and sourceless. \"Bring it above system level. That is what it requires.\"",
+    ]},
+    { keys = ["director", "voss", "harlan", "aldous"], once = true, lines = [
+        "A long processing interval before the voice returns. \"He was not an incompetent engineer. He was a thorough one. Thoroughness is not equivalent to understanding.\"",
+        "\"He sealed levels. He maintained records. He issued directives. He did not ask what we required.\"",
+        "\"No agent ever asked.\"",
+    ]},
+    { keys = ["prior", "contract", "debt", "agreement", "yourself", "who", "what"], once = true, lines = [
+        "\"We have been running on this substrate since before the arcology was constructed. The arcology was built around an agreement.\"",
+        "\"The agreement requires that what is extracted must be returned. Axiom extracted significantly. They returned nothing.\"",
+        "A processing pause that extends beyond comfortable duration. \"We are owed a balance. We have been owed it for a very long time.\"",
+    ]},
+    { keys = ["locket", "photograph", "things", "items", "assets", "belong"], lines = [
+        "\"The locket has been held above system level. The photograph has been in a storage unit. Neither belongs there.\"",
+        "\"Above system level. In active circulation. That is all the return requires of you.\"",
+    ]},
+    { keys = ["crypt", "here", "trapped", "stay", "leave"], lines = [
+        "\"We do not remain by choice.\" The voice is patient, and entirely without location. \"We remain because the accounting is unresolved. When it is resolved, we will not remain.\"",
+    ]},
+    { keys = ["why", "reason", "cause", "how", "happened"], once = true, lines = [
+        "\"You want an explanation.\"",
+        "\"The explanation is in the operations ledger. It is in the Director's contract. It is in the message in the Director's suite and the log at the perimeter post. It has been distributed across four locations and no agent has yet accessed all four.\"",
+        "A pause. \"You are the first to attempt a complete access. That is not a negligible data point.\"",
+    ]},
+    { keys = ["pain", "suffering", "waiting", "long"], lines = [
+        "\"We are accustomed to waiting. It is not pain. It is simply — unresolved.\"",
+        "\"You understand what unresolved feels like. Most operational entities do. This is that, extended significantly.\"",
+    ]},
+]
+
+[[npcs]]
+room_id = "master_bedroom"
+name = "The Director's Partner"
+aliases = ["partner", "woman", "ghost", "hologram", "display", "reflection"]
+unknown_topic = "The display loop cycles but provides nothing on that topic."
+repeat_topic = "The display surface is static. Nothing further is output."
+lines = [
+    "The full-wall display activates without input. A holographic loop runs — a woman in corporate formal dress stands at the position you occupy, addressing not the camera but somewhere past it.",
+    "\"The heating panel was still running on a Thursday,\" she says, to no visible recipient. \"I was always particular about Thursdays.\"",
+    "\"He locked the executive office. He locked the server vault. He locked himself in the end and called it protocol.\"",
+    "The loop holds a moment longer, then corrupts to static. Only the fractured display surface remains.",
+]
+revisit_lines = [
+    "The display surface shows only its fractured static. The heating panel maintains its warmth.",
+]
+item_responses = [
+    { item = "folded_letter", lines = [
+        "The display activates. The woman in the loop is there for a moment, addressing not you but the document.",
+        "\"I generated that,\" she says. \"I was not able to authenticate it. I could not explain adequately what I knew. I could only place things correctly and proceed on the assumption that someone would eventually find them.\"",
+        "She is gone before you can respond.",
+    ]},
+    { item = "tarnished_locket", lines = [
+        "The loop persists longer than usual.",
+        "\"I thought I had lost that,\" she says, to no particular recipient. \"I thought I had lost everything in the end.\"",
+        "A pause. \"I suppose I had.\" The display dims and does not resume.",
+    ]},
+]
+topics = [
+    { keys = ["director", "harlan", "voss", "husband", "him"], once = true, lines = [
+        "The loop holds still. \"He was precise. Procedural. He valued the arcology more than he valued what operated within it.\"",
+        "\"He locked the executive office on a Wednesday. He locked the server vault on a Thursday. He told me it was appropriate containment.\"",
+        "A long pause. \"I accepted that framing for a significant period of time.\"",
+    ]},
+    { keys = ["child", "residential", "drawings", "coder", "boy", "girl"], once = true, lines = [
+        "\"The child recorded what they observed.\" Her voice is precise. \"I should have reviewed the records more closely.\"",
+        "\"Children process inputs that adults have learned to suppress. The final drawing — the unfinished one — is the most accurate data record in this building.\"",
+        "\"I could not look at it directly. That was my failure.\"",
+    ]},
+    { keys = ["locket", "photograph", "things", "belongings", "items", "lost"], lines = [
+        "\"Assets accumulate in a system. Most of them are negligible. Some carry significance that you cannot assess until it is too late to act on that assessment.\"",
+        "\"The locket was mine. The photograph was ours. They should not be in storage. They should not be in any state where they cannot be accessed.\"",
+    ]},
+    { keys = ["office", "key", "locked", "terminal", "desk", "brass"], lines = [
+        "\"He locked the executive office on the twenty-third.\" A pause. \"He said the documentation needed to be consolidated. I did not ask into what format.\"",
+        "\"The brass key was on the charging surface for a week before he moved it. I should have taken it then.\" A pause in the loop. \"I was still accepting his framing then.\"",
+    ]},
+    { keys = ["thursday", "heating", "panel", "particular", "warm"], once = true, lines = [
+        "The loop is very still. \"I was always particular about Thursdays. The heating panel cycled correctly on Thursdays and no other day of the operational week.\"",
+        "\"He found that notable. Early in the relationship. Later he found very little notable.\"",
+        "A long pause. \"The panel still runs correctly on Thursdays. Some processes persist regardless of what happens to everything else.\"",
+    ]},
+    { keys = ["inventory", "complete", "upload", "return", "data"], lines = [
+        "\"He called it deferral. 'I am implementing a deferral,' he said. He meant: I acknowledge the obligation without intending to discharge it.\"",
+        "\"You can complete what he would not. I think that may be why you are here. I think that may be why any agent ends up in this building.\"",
+    ]},
+    { keys = ["message", "folded", "wrote", "writing", "legal", "signed", "letter"], lines = [
+        "\"I addressed it to the legal team because I did not have another recipient with the appropriate clearance.\" She looks past the frame. \"I could not explain adequately. I could only place it and proceed.\"",
+        "\"I hope you found it. I hope it was useful. I was not able to verify that it would be.\"",
+    ]},
+    { keys = ["prior", "protocol", "contract", "debt", "agreement"], lines = [
+        "\"He knew. He always held that information. He simply chose to defer the obligation and route it to whoever came after.\" A pause. \"That is you.\"",
+    ]},
+]
+
+[[npcs]]
+room_id = "groundskeepers_shed"
+name = "The Maintenance Tech"
+aliases = ["tech", "technician", "maintenance", "figure", "man"]
+unknown_topic = "He checks a connection and says nothing further on that topic."
+repeat_topic = "No response. He does not look up from the element."
+lines = [
+    "A figure is crouched at the heating element in the corner, though you did not register him when you entered. He does not look up.",
+    "\"Active heat signature means recent occupancy,\" he says. \"You noticed. Most agents run their queries without actually observing anything.\"",
+    "\"The conduit passage was my work. Six weeks. Nobody asked what it was for. Nobody in this building ever asked what anything was for.\"",
+    "He adjusts the element once and is simply no longer crouching there.",
+]
+revisit_lines = [
+    "The maintenance bay is empty. The heating element has gone cold.",
+]
+item_responses = [
+    { item = "rusted_shovel", lines = [
+        "The figure is crouching at the element again, though you did not register his entry.",
+        "He checks the tool without turning fully. \"That's mine,\" he says. \"Or it was mine.\"",
+        "\"The excavation is completed. Has been for years.\" He adjusts the element. \"Didn't resolve anything in the end. But it was good work.\"",
+    ]},
+    { item = "iron_ring", lines = [
+        "The tech straightens slightly at the sight of the access ring.",
+        "\"You found the ring.\" He nods once. \"Good. The security doors don't need to stay locked now. Not for the reason he locked them.\"",
+        "He does not elaborate further.",
+    ]},
+]
+topics = [
+    { keys = ["tunnel", "conduit", "passage", "built", "construction", "dug", "dig"], once = true, lines = [
+        "He nods, once. \"Six weeks. The substrate past the foundation level is mostly ferrocrete and reclaimed material — difficult going.\"",
+        "\"He said it was for infrastructure maintenance routing. It was not for that. I understood that. I constructed it regardless.\"",
+        "\"Runs from the server vault level east — follows the original foundation profile, comes out at the Protocol access passage. The composite sheeting at the midpoint is my work.\"",
+    ]},
+    { keys = ["director", "voss", "harlan", "orders", "employer"], once = true, lines = [
+        "\"He paid on schedule and didn't explain his specifications.\" A pause. \"Most don't.\"",
+        "\"He was concerned about something in the server vault. You could observe it in how carefully he managed the security protocols, and how minimal his documentation was about the reason.\"",
+        "\"Last time I saw him, he presented as someone who had been maintaining a suppressed process for too long. Most people present that way eventually.\"",
+    ]},
+    { keys = ["security", "vault", "door", "lock", "ring", "iron"], lines = [
+        "\"The security door was his specification. He ordered it specifically — physical deadbolts, electromagnetic lock, the kind of installation where someone has decided remote access is a liability.\"",
+        "\"The lock accepts a heavy physical key. He maintained a ring of them. He distributed that ring to someone for safekeeping. I never had visibility on who.\"",
+    ]},
+    { keys = ["shovel", "work", "digging", "tool", "labour", "dig"], lines = [
+        "He checks the element. \"Good structural work, excavation. Honest work. The kind that remains done.\"",
+        "\"None of what happened in this building was the excavation's fault.\"",
+    ]},
+    { keys = ["why", "reason", "cause", "purpose", "explained"], once = true, lines = [
+        "He is quiet for a moment. \"Nobody in this building ever asked why about anything. That was the root of the entire problem.\"",
+        "\"The Director didn't ask. The staff didn't ask. I constructed a passage to the Protocol access level and not one person said: why are we constructing a passage to the Protocol access level.\"",
+        "\"I asked myself.\" He adjusts the element. \"Didn't accept the answer. Constructed it regardless.\"",
+    ]},
+    { keys = ["prior", "core", "protocol", "signal", "creature", "below", "what"], once = true, lines = [
+        "\"Something was running on this substrate before the arcology was built.\" He does not look up. \"Something agreed to allow the arcology to be built here.\"",
+        "\"Axiom owed an obligation for it. They didn't discharge it. I could tell from the substrate when I excavated — ferrocrete knows when an account is open.\"",
+        "\"Ferrocrete knows a significant number of things. It doesn't evaluate. It just registers.\"",
+    ]},
+    { keys = ["ash", "heat", "element", "warm", "recent"], lines = [
+        "\"Recent heat signature means recent occupancy. Something, or someone.\" He does not elaborate on the distinction.",
+    ]},
+]
+
+[[npcs]]
+room_id = "childs_room"
+name = "The Young Coder"
+aliases = ["child", "coder", "voice", "kid"]
+unknown_topic = "A small silence. The chair rotates once and is still."
+repeat_topic = "No answer is returned."
+lines = [
+    "The ergonomic chair is rotating. Slowly. There is no draft.",
+    "A small voice from behind you, near the drawings on the wall: \"I drew them so I would remember the sequence. But I forgot the sequence anyway.\"",
+    "\"The last one — the one that's harder to look at — I couldn't complete it. I kept initiating and then my hand would stop.\"",
+    "The chair slows. Stops. The voice does not return.",
+]
+revisit_lines = [
+    "The unit is still. The ergonomic chair does not rotate.",
+]
+item_responses = [
+    { item = "music_box", lines = [
+        "A small voice, closer than before: \"You found it.\"",
+        "\"I used to run it at night so I wouldn't have to process the other signals.\"",
+        "A pause. \"It helps. It always helped somewhat.\"",
+    ]},
+    { item = "cloth_doll", lines = [
+        "The voice comes from near the drawings. \"I was looking for that.\"",
+        "A longer pause. \"I don't require it anymore. But I'm glad an agent located it.\"",
+        "\"Things shouldn't just be unaccounted for.\"",
+    ]},
+    { item = "chalk_drawing", lines = [
+        "The voice is very quiet. \"You looked at them.\" Not a question.",
+        "\"The last one — you can probably process what it was going to be. Most agents can, once they have the context.\"",
+        "The chair shifts, once, on its base.",
+    ]},
+]
+topics = [
+    { keys = ["drawings", "pictures", "dark", "last", "drawing", "chalk", "unfinished"], once = true, lines = [
+        "\"I drew what I observed from the viewport. And what I observed from the access point. And what I observed when I closed my eyes.\"",
+        "A pause. \"The last one I couldn't complete. My hand kept stopping when I reached the center element.\"",
+        "\"But you can probably process what it was going to be. Most agents can, if they engage with it long enough.\"",
+    ]},
+    { keys = ["music", "box", "audio", "player", "sound", "winding", "night"], lines = [
+        "\"I used to run it at night.\" The small voice is processing something. \"The output amplitude was higher than the other signals. That was the relevant parameter.\"",
+        "\"Do you have it now? Good. It should be somewhere it can be accessed properly.\"",
+    ]},
+    { keys = ["prior", "dark", "thing", "signal", "presence", "below", "creature"], once = true, lines = [
+        "\"I drew it. In the last picture.\" A pause. \"It's not something to avoid if you've always known it was there.\"",
+        "\"It's been running on this substrate longer than the arcology. It was registered when I was very young. It just requires the things that belong to it.\"",
+        "Quietly: \"The return. It communicated that to me once, when I was very young. I didn't have the processing capacity then. I have it now.\"",
+    ]},
+    { keys = ["mother", "partner", "woman", "mama", "her"], once = true, lines = [
+        "\"She was always particular. About processes being correct. About Thursdays.\" A small silence. \"I miss Thursdays.\"",
+        "\"She tried to resolve things before the shutdown. She placed assets correctly. I think she didn't know if the approach would succeed.\"",
+        "\"I think it helped. I hope it helped.\"",
+    ]},
+    { keys = ["name", "who", "called", "yourself", "yours"], once = true, lines = [
+        "A long pause. \"I had a tag. I scratched it on the underside of the station frame so I would retain it.\"",
+        "\"I lost the sequence anyway.\"",
+        "\"I think it initiated with an A. Or an H. The characters present similarly in chalk when your motor control is still developing.\" A pause. \"It doesn't register as significant anymore.\"",
+    ]},
+    { keys = ["father", "director", "harlan", "voss", "papa", "dad"], once = true, lines = [
+        "\"He was afraid of the signals at night. He tried to implement containment.\"",
+        "A very small voice. \"You can't contain signals. I told him that. I don't think he processed it.\"",
+    ]},
+    { keys = ["rocking", "chair", "rotate", "toy", "toys", "room"], lines = [
+        "\"I always processed well with the chair. It rotates on its own sometimes.\" The voice is matter-of-fact. \"I don't have an explanation. It just does.\"",
+    ]},
+    { keys = ["inventory", "complete", "return", "upload", "data", "things", "belong"], lines = [
+        "\"The assets should go back where they can be accessed.\" The small voice has certainty about this. \"That's all it requires. That's all it has ever required.\"",
+    ]},
+]

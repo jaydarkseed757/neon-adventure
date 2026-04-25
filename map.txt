@@ -1,0 +1,61 @@
+AXIOM ARCOLOGY — ROOM MAP
+══════════════════════════════════════════════════════════════
+
+── UPPER FLOOR ──────────────────────────────────────────────
+
+  [PRIVATE LOUNGE]
+        │
+  [DIRECTOR'S SUITE]
+        │
+  [VISITOR SUITE]──[EXECUTIVE LEVEL]──[RESIDENTIAL UNIT 7]
+                          │ (down to DATA ARCHIVE)
+                          │ (up to ROOFTOP INSTALLATION — locked, needs portrait key)
+
+
+── GROUND FLOOR ─────────────────────────────────────────────
+
+                    [STAFF QUARTERS]
+                            │
+                        [UTILITY BAY]
+                            │
+  [SUB-LEVEL ACCESS]──[MAINT. CORRIDOR]──[CAFETERIA]
+        (↓)                 │                  │
+                    [EXEC OFFICE]    [EXEC DINING SUITE]──[SUPPLY ROOM]──[HYDROPONIC BAY]
+                            │                  │                               │
+  [ENTERTAIN. DECK]──[DATA ARCHIVE]────[CORPORATE LOBBY]──[SECURITY CHKPT]──[MEMORIAL CHAMBER]
+                                              │
+                                       [ENTRANCE PLAZA]
+                                              │
+                                     [CORPORATE APPROACH]
+                                              │
+                                       [PERIMETER POST]
+
+  NOTE: DATA ARCHIVE and EXEC DINING SUITE both connect to CORPORATE LOBBY (north/east).
+  The loop runs: LOBBY → ARCHIVE → EXEC OFFICE → MAINT. CORRIDOR
+                       → CAFETERIA → EXEC DINING SUITE → LOBBY
+
+  [HYDROPONIC BAY] also connects east to [BIO-RESEARCH LAB]
+
+
+── SUB-LEVEL ────────────────────────────────────────────────
+
+  (↑ SUB-LEVEL ACCESS)
+  [SERVER VAULT]──[PROTOCOL PASSAGE]──[DEEP PROTOCOL CORE]──[DEEP STORAGE]
+  (SERVER VAULT east exit is locked — needs iron ring)
+
+  (↑ CAFETERIA)
+  [LOWER ACCESS BAY]──[UNDERGROUND CONDUIT]──[MAINTENANCE BAY]
+                                                    │
+                                          [ABANDONED PLAZA]──[VEHICLE BAY]
+                                                    │
+                                          [PERIMETER GATE]──[SPRAWL EDGE]──[THE SPRAWL]
+
+
+── ROOFTOP & TOWER ──────────────────────────────────────────
+
+  [COMMS TOWER]
+       │ (down)
+  [ROOFTOP INSTALLATION]  ←  reached via EXECUTIVE LEVEL (up, after unlocking padlock)
+
+
+37 rooms total.

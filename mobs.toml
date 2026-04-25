@@ -1,0 +1,236 @@
+[[mobs]]
+id = "cat"
+name = "the drone"
+current_room = "foyer"
+wander_rooms = [
+    "foyer",
+    "library",
+    "study",
+    "dining_room",
+    "kitchen",
+    "coat_room",
+    "servants_hall",
+    "ballroom",
+    "smoking_room",
+    "chapel",
+    "guest_room",
+]
+move_chance = 5     # 1-in-5 chance to move each turn
+idle_chance = 6     # 1-in-6 chance to emit an idle line while in the player's room
+presence = "A compact surveillance drone clings to the upper wall here, its sensor cluster aimed at you."
+description = "A small quadrotor unit, black polymer shell matte-finished to absorb rather than reflect light. It should not be operational — its identification transponder reads only: UNIT NULL. Its sensor array tracks your movement with a precision that doesn't correspond to any standard idle patrol state. There is no active transmission being broadcast. Whatever it is observing, it is observing for itself."
+enter_messages = [
+    "A small drone drops from the ceiling and hovers, sensor cluster directed toward you.",
+    "The drone appears from the corridor access and settles on the upper wall, sensors active.",
+    "A compact black unit slips through the access gap and goes still, sensor array engaged.",
+    "Something moves at the upper edge of your visual field. The drone settles and is immediately still.",
+    "The drone arrives without announcement and occupies a corner as though it has always been there.",
+]
+leave_messages = [
+    "The drone's rotors spin up and it disappears into the corridor without a broadcast signal.",
+    "With a slow sensor sweep, the drone lifts and slips out.",
+    "The drone turns and exits without a sound.",
+    "The drone rises, holds position for a moment, and is gone.",
+    "The drone departs. You did not track its exit — only the empty wall where it was.",
+]
+idle_messages = [
+    "The drone's sensor cluster adjusts to follow your movement.",
+    "The drone shifts its position slightly and resettles, sensors still active.",
+    "A faint tone from the drone — not a system alert. It does not look away.",
+    "The drone's optical array moves slowly across the ceiling. You decide not to look up.",
+    "The drone presses itself flat against the wall, then resumes its hover.",
+    "The drone holds very still, as though waiting for something you have not yet done.",
+]
+
+[[mobs]]
+id = "raven"
+name = "the watcher"
+current_room = "dead_garden"
+wander_rooms = [
+    "front_porch",
+    "gravel_path",
+    "garden_gate",
+    "dead_garden",
+    "kitchen_garden",
+    "woods_edge",
+    "gatehouse",
+    "tower_room",
+    "greenhouse",
+]
+move_chance = 6
+idle_chance = 5
+presence = "A large surveillance unit is perched on a high ledge here, its sensor array trained on you."
+description = "A quadrotor unit — larger than the compact model, its sensor cluster configured for wide-area coverage rather than close observation. It has been watching you since before you noticed it. Its casing has an oil-dark finish that shifts slightly in the light. It shows no intention of moving. Its identification markings have been deliberately obscured. It shows no intention of anything, in the way that systems without declared purpose sometimes present as though they have exactly one."
+enter_messages = [
+    "A large drone drops from somewhere above and lands heavily on a high point, rotors folding with a sound like a case closing.",
+    "Rotors beat once overhead. The watcher lands and is immediately still.",
+    "The surveillance unit arrives without warning, settling on elevated ground and training its array on you.",
+    "A shape descends and resolves into the larger drone unit. It regards you with full sensor coverage.",
+]
+leave_messages = [
+    "The watcher opens its rotors and is gone before you track its departure.",
+    "With a single sharp motor burst, the unit lifts into the grey above.",
+    "The drone departs, rotors loud for a moment, then silence.",
+    "The unit takes off, circles once low overhead, and disappears into the signal haze.",
+]
+idle_messages = [
+    "The watcher rotates its sensor cluster slowly to a new orientation, maintaining coverage.",
+    "The unit activates an additional optical array and produces no visible output.",
+    "The drone shifts on its perch and is still again.",
+    "The sensor array clicks through its calibration cycle, deliberate as a judicial process.",
+    "The drone's casing adjusts slightly in the ambient temperature shift. It does not disengage coverage.",
+]
+
+[[mobs]]
+id = "figure"
+name = "the ghost"
+current_room = "upper_landing"
+wander_rooms = [
+    "upper_landing",
+    "master_bedroom",
+    "childs_room",
+    "guest_room",
+    "smoking_room",
+    "attic",
+    "library",
+    "study",
+]
+move_chance = 4
+idle_chance = 3
+presence = "A partial holographic artifact occupies the far edge of this room — a shape, just below the threshold of full resolution."
+description = "When you look directly at where the projection seems to originate, there is nothing there. There is the room, and what is in the room, and no one standing in it but you. The display panels show no active output. The power is off. Whatever this is, it is not drawing from any source you can identify."
+enter_messages = [
+    "In a display panel for a moment — something. Then the panel shows only its dead surface.",
+    "Movement at the edge of your visual field. When you turn: only the room.",
+    "You have the clear impression that something just stepped back out of the frame.",
+    "The ambient light quality shifts, briefly, as though something partially opaque moved through it.",
+]
+leave_messages = [
+    "The artifact, if there was an artifact, is no longer at the position it occupied.",
+    "Whatever you were tracking in your peripheral field is now absent.",
+    "You look back. There is nothing there, and the room is the same as it was.",
+    "It is simply gone. You are not certain it was ever present.",
+]
+idle_messages = [
+    "The ambient temperature in the room drops a degree, or registers as doing so.",
+    "You catch motion in your peripheral field. When you look: stillness.",
+    "Something shifts at the edge of the room, near the wall. When you face it directly, nothing.",
+    "A sound — almost a word — from behind you. When you turn, the room is as it was.",
+    "The shadows in one corner rearrange in a way you cannot account for.",
+    "For a moment you are certain the room has an occupant at a specific location. The certainty passes. The sensation does not.",
+]
+
+[[mobs]]
+id = "hound"
+name = "the security unit"
+current_room = "servants_hall"
+wander_rooms = [
+    "coat_room",
+    "dining_room",
+    "servants_hall",
+    "washroom",
+    "servants_quarters",
+    "kitchen",
+    "stable",
+    "groundskeepers_shed",
+    "cellar_stairs",
+]
+move_chance = 7
+idle_chance = 8
+presence = "A deactivated security unit stands in the shadows here, its chassis dark, its motion sensors still cycling."
+description = "A bipedal security unit — patrol configuration, power cells depleted but the motion-sensor array still drawing residual charge from somewhere. No corporate markings remain. It moves without urgency, without sound, without apparent logic. It has been walking the same routes for three years on trickle power and something that is no longer instructions. It watches you with the patience of a system that was designed to wait indefinitely."
+enter_messages = [
+    "The security unit steps in soundlessly, chassis dark, motion sensors cycling as it assesses the space.",
+    "A large patrol unit appears in the access gap, scans the room, and enters.",
+    "The unit arrives without sound and takes a position near the wall, sensors active.",
+    "You register nothing, but the security unit is now in the room. It has been there for a moment already.",
+]
+leave_messages = [
+    "The unit turns and steps out without acknowledgement.",
+    "The patrol unit moves toward the access point and is gone before you think to follow.",
+    "The unit exits as quietly as it entered.",
+    "The security unit disappears into the corridor, its footfall entirely silent.",
+]
+idle_messages = [
+    "The unit produces a low tonal output — not a warning, not a ready signal. Something without a standard designation.",
+    "The unit's sensor array sweeps across something near the floor that registers nothing on visible spectrum.",
+    "Its optical sensors move past you to a point behind your left shoulder and hold there.",
+    "The unit enters a low-power stance, sensors still cycling.",
+    "The unit rises from its low-power stance without apparent trigger, repositions, and resettles.",
+]
+
+[[mobs]]
+id = "something_below"
+name = "a signal from the deep"
+current_room = "tunnel"
+wander_rooms = [
+    "wine_cellar",
+    "crypt_entrance",
+    "crypt",
+    "root_cellar",
+    "tunnel",
+    "vault",
+]
+move_chance = 6
+idle_chance = 4
+presence = "Something is generating a carrier signal in this space. You cannot identify the source."
+description = "When you hold still and focus on the direction the signal seems to originate from, the source has already shifted. It is now registering from a different orientation."
+enter_messages = [
+    "The background hum changes frequency. Then, from further in, the sense of something active.",
+    "Something adjusts in the deep infrastructure. You register the change before you identify it.",
+    "A signal arrives before anything visible does. It does not resolve into anything visible.",
+    "From the passage: a carrier frequency. Slow, patient, not from any system with a manifest entry.",
+]
+leave_messages = [
+    "The signal recedes into the infrastructure and does not return immediately.",
+    "Whatever was active has gone quiet, or moved far enough away to fall below threshold.",
+    "The background hum normalizes. Whatever else was present in this space has relocated.",
+    "The carrier frequency, if it was a carrier frequency, has ceased.",
+]
+idle_messages = [
+    "Something cycles through a process state in the deep infrastructure nearby.",
+    "A slow data transmission from somewhere close. You cannot determine the direction.",
+    "The ambient hum pauses for three seconds, then resumes at a slightly different frequency.",
+    "A pattern — structured, not random — moves through the wall conduit near your position.",
+    "The air pressure changes, once, as if something large has adjusted its configuration nearby.",
+]
+
+[[mobs]]
+id = "moth"
+name = "the glitch"
+current_room = "chapel"
+wander_rooms = [
+    "foyer",
+    "library",
+    "chapel",
+    "ballroom",
+    "dining_room",
+    "smoking_room",
+    "study",
+    "childs_room",
+    "guest_room",
+    "coat_room",
+]
+move_chance = 4
+idle_chance = 5
+presence = "A visual artifact — a recurring graphical anomaly — clings to the display surface near the ceiling."
+description = "A repeating display artifact, the size of an open hand, appearing at the upper edges of wall panels and inactive screens. It moves with the pattern of something organic, though it clearly is not. It has been appearing in the arcology's system logs for longer than the building has been abandoned. It faces the wall. Whatever its rendering suggests for antennae moves in slow arcs, tracking something in the signal environment that you cannot detect."
+enter_messages = [
+    "A display artifact flickers in from the corridor and adheres to the upper wall.",
+    "Something pale cycles in the upper register of the room's inactive displays and comes to rest.",
+    "The glitch arrives on what should be a dead surface and folds itself still.",
+    "A graphical anomaly drifts in and finds a panel, going static immediately.",
+]
+leave_messages = [
+    "The artifact's display pattern activates briefly and it drifts toward the corridor signal.",
+    "The glitch is gone. You did not observe its departure.",
+    "The artifact detaches from the surface and propagates out without urgency.",
+    "A brief render cycle near the ceiling, and it is gone.",
+]
+idle_messages = [
+    "The artifact cycles through its pattern twice and is still again.",
+    "The glitch's display breathes slowly, as if processing.",
+    "The artifact reorients on the surface to face a different direction. You did not observe it move.",
+    "The glitch spirals upward briefly and returns to exactly its previous position.",
+    "The artifact's rendering sweeps back and forth with a rhythm you find yourself matching with your own breathing.",
+]

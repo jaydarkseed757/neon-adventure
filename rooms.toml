@@ -1,0 +1,258 @@
+[[rooms]]
+id = "foyer"
+name = "Corporate Lobby"
+description = "The atrium of Axiom Tower rises six stories above you, its chrome-and-glass surfaces long past their maintenance cycle. Brand holographics cycle through corrupted loops on the walls — the company insignia blooms and dissolves, half its pixels dead. The lobby floor is polished black composite, cracked along one diagonal seam. A reception desk of matte composite dominates the center, its terminal dark. Behind it, on a raised platform designed to display things of significance, an upload console pulses with a single amber ready-light. Whatever was meant to be delivered here has been waiting for a very long time."
+exits = { north = "library", east = "dining_room", south = "front_porch", west = "coat_room" }
+items = ["signal_node", "torn_schematic"]
+
+[[rooms]]
+id = "front_porch"
+name = "Entrance Plaza"
+description = "A wide plaza outside the tower's main entrance, its composite paving cracked and rain-stained. Security barrier poles stand at intervals, their indicators long dead. Corporate signage has been stripped from the facade above, leaving pale rectangular outlines against darker grime. A marked approach lane curves south into the standing urban fog."
+exits = { north = "foyer", south = "gravel_path" }
+items = ["dead_beacon"]
+
+[[rooms]]
+id = "coat_room"
+name = "Security Checkpoint"
+description = "A narrow security station set into the lobby wall, lined with hooks holding abandoned equipment — a transit vest, a maintenance jacket with the Axiom logo half-detached. The access scanner mounted at waist height has been pried open, its internals exposed. Someone left in a hurry, or accessed something they were not supposed to access. A single heavy jacket remains on its hook, pockets unfastened."
+exits = { east = "foyer", west = "chapel" }
+items = ["tactical_coat", "access_chip"]
+
+[[rooms]]
+id = "library"
+name = "Data Archive"
+description = "Server racks rise floor to ceiling, most units cold and dark, their indicator lights dead. A few still pulse — amber, amber, amber — in patterns that don't correspond to any standard cycle. A data workstation occupies a bay near the central aisle, its surface covered in paper field notes in a cramped and urgent hand that belongs to someone who did not trust the network. A maintenance ladder is bolted to the far wall, leading to an upper access level."
+exits = { south = "foyer", east = "study", up = "upper_landing", west = "ballroom" }
+items = ["leather_journal", "interface_stylus"]
+
+[[rooms]]
+id = "study"
+name = "Executive Office"
+description = "A private office thick with the residual smell of recycled air and old electronic components. Display screens cover two walls — all dark, their frames dusty. An executive terminal dominates the far wall, its physical lockout engaged: a brass-key override mechanism retrofitted over the original biometric panel by someone who decided they wanted a lock that couldn't be spoofed. A ventilation duct in the ceiling hums on a frequency that is almost subsonic."
+exits = { west = "library", north = "servants_hall" }
+items = ["cipher_key", "stim_inhaler"]
+
+[[rooms]]
+id = "dining_room"
+name = "Executive Dining Suite"
+description = "A long corporate dining table set for an event that never concluded. Meal service trays sit undisturbed, their contents desiccated beyond identification. The Axiom crest is embossed on every piece of tableware. Automated serving units stand in standby along the walls, their charge long exhausted, articulated arms frozen mid-extension. A dumbwaiter hatch in the east wall hangs partially open."
+exits = { west = "foyer", north = "kitchen", east = "pantry" }
+items = ["alloy_fork", "burnt_relay"]
+
+[[rooms]]
+id = "kitchen"
+name = "Cafeteria"
+description = "An industrial kitchen gone cold and still. Induction ranges line one wall, elements dark. Prep surfaces are wiped clean, which is somehow more unsettling than if they were dirty. Overhead, utility conduit runs in ordered parallel lines. A service hatch in the floor leads to the lower supply level. Someone closed the last shift's prep properly. No one came for the next shift."
+exits = { south = "dining_room", west = "servants_hall", down = "root_cellar" }
+items = ["heating_module", "mono_blade"]
+
+[[rooms]]
+id = "pantry"
+name = "Supply Room"
+description = "A supply room, most shelves stripped. Sealed containers line one wall — emergency rations, chemical cleaners, items still technically within date. The inventory terminal at the door is still running on power backup, logging each entry and exit, though there have been no entries in a very long time. A narrow access door leads to the hydroponic bay to the south."
+exits = { west = "dining_room", south = "kitchen_garden" }
+items = ["sealed_canister", "specimen_vial"]
+
+[[rooms]]
+id = "servants_hall"
+name = "Maintenance Corridor"
+description = "A long utilitarian corridor connecting the arcology's working infrastructure. Numbered access panels line the upper wall, their status indicators dead. Emergency lighting strips at floor level glow a persistent red. The floor is non-slip composite, worn pale in the center from years of foot traffic moving back and forth between the same points, performing the same tasks, asking none of the same questions."
+exits = { south = "study", east = "kitchen", north = "washroom", west = "cellar_stairs" }
+items = ["iron_ring"]
+
+[[rooms]]
+id = "washroom"
+name = "Utility Bay"
+description = "A utility bay with exposed plumbing and conduit runs along every wall. A manual water pump has been bypassed by a pressure-retrofit system that is no longer pressurized. Coils of cable and bundled hose hang from ceiling hooks. A narrow port window in the exterior wall faces a service lane — a rectangle of grey ambient light."
+exits = { south = "servants_hall", north = "servants_quarters" }
+items = ["decontaminant_block", "frayed_cable"]
+
+[[rooms]]
+id = "cellar_stairs"
+name = "Sub-Level Access"
+description = "A stairwell with industrial grating descends into cooling air. The temperature drops noticeably with each step. A faint electronic hum rises from below — systems still running on backup power, in rooms no one has entered in three years. An emergency handrail runs along one side, its surface worn smooth at the grip points."
+exits = { east = "servants_hall", down = "wine_cellar" }
+items = []
+
+[[rooms]]
+id = "wine_cellar"
+name = "Server Vault"
+description = "A climate-controlled server vault, its precision cooling systems still running on backup power — the hum they produce is the loudest sound in the building. Most server racks are dark, their units pulled or dead, but a few in the far rows persist, cycling through indicator states in sequences you cannot interpret. At the far end, a reinforced security door is set into the wall — electromagnetic lock, physical dead-bolts, the kind installed when someone has decided that digital security is insufficient."
+exits = { up = "cellar_stairs" }
+items = ["dark_bottle", "vault_chip"]
+
+[[rooms]]
+id = "crypt_entrance"
+name = "Protocol Passage"
+description = "A passage cut through the arcology's composite foundation into what lies beneath it. The walls are raw ferrocrete and ancient cabling — infrastructure that predates the building entirely. The lighting here is not Axiom's: a bioluminescent strip runs along the upper wall in a configuration that belongs to no known manufacturer's catalog. Etched above the arch ahead, in a typeface that is not part of any corporate design language: PROTOCOL ACCESS — AUTHORIZED RETURN ONLY."
+exits = { west = "wine_cellar", north = "crypt" }
+items = ["dead_flare"]
+
+[[rooms]]
+id = "crypt"
+name = "Deep Protocol Core"
+description = "A chamber that should not exist inside a commercial arcology. Circular, its walls dense with processing substrate that has grown rather than been installed, spreading across the original ferrocrete the way something living makes itself comfortable. Status indicators cover every surface in non-standard configurations, cycling through states that don't correspond to any system you have been trained to interpret. At the center, a primary node cluster sits with one access panel extended. Something catches the ambient light inside."
+exits = { south = "crypt_entrance", west = "vault" }
+items = ["signet_ring", "containment_wrap"]
+
+[[rooms]]
+id = "root_cellar"
+name = "Lower Access Bay"
+description = "A low raw-concrete space beneath the cafeteria, cold and damp. Storage bins line one wall, mostly empty. A passage mouth has been opened in the far wall — recent work, the concrete edges fresh, raw dust still settled across the floor around the opening. Someone wanted to connect this level to something further east without going through the main corridors."
+exits = { up = "kitchen", east = "tunnel" }
+items = ["excavation_tool"]
+
+[[rooms]]
+id = "tunnel"
+name = "Underground Conduit"
+description = "A tunnel cut through old substrate and reclaimed earth, narrow enough to require care at the turns. The walls are supported with reinforced composite sheeting, the seams visible. Somewhere ahead, a faint light source creates a gradient from near-dark to dim without illuminating anything clearly. The air smells of concrete dust and insulation that has been hot and is now merely warm."
+exits = { west = "root_cellar", east = "groundskeepers_shed" }
+items = ["work_glove"]
+
+[[rooms]]
+id = "groundskeepers_shed"
+name = "Maintenance Bay"
+description = "A cluttered equipment depot packed with infrastructure tools — conduit spools, junction boxes, circuit testers with exhausted batteries. A workbench runs along one wall holding bins of components and coiled cable. A small heating element in the corner has been recently active — you can feel the warmth from across the room. Someone was here, and not long ago."
+exits = { west = "tunnel", north = "dead_garden" }
+items = ["cable_shears", "coiled_wire", "thermal_residue"]
+
+[[rooms]]
+id = "dead_garden"
+name = "Abandoned Plaza"
+description = "A former rooftop plaza, its synthetic turf cracked and bleached grey. A solar-tracking clock mechanism at the center — a sculptural timepiece — stands with its drive shaft snapped, casting a shortened shadow that points to nothing useful. Structural barriers enclose the space on three sides. The surface underfoot crunches with material that used to be something else."
+exits = { south = "groundskeepers_shed", east = "garden_gate", north = "stable" }
+items = ["sundial_fragment"]
+
+[[rooms]]
+id = "garden_gate"
+name = "Perimeter Gate"
+description = "A tall security gate set into the arcology's perimeter barrier. It stands open, its electromagnetic lock housing ripped clean from the mounting frame, wiring trailing loose. Beyond: a narrow access lane leading out into the surrounding urban environment. The signal interference thickens noticeably as you approach the boundary. Whatever is out there, the building's systems have stopped tracking it."
+exits = { west = "dead_garden", east = "woods_edge" }
+items = ["broken_lock"]
+
+[[rooms]]
+id = "upper_landing"
+name = "Executive Level"
+description = "A broad corridor on the executive floor, its wall panels running low-power standby patterns — slow amber pulses across matte surfaces. Corporate portraits are set behind reinforced transparent panels in recessed alcoves, the subjects watching with institutional permanence. Three wing doors lead to executive suites. At the far end of the corridor, a security door is sealed with a physical chain and combination padlock, the kind that cannot be overridden remotely."
+exits = { down = "library", north = "master_bedroom", east = "childs_room", west = "guest_room" }
+items = ["biometric_chip"]
+
+[[rooms]]
+id = "woods_edge"
+name = "Sprawl Edge"
+description = "The corporate perimeter ends where the unmanaged sprawl begins. The transition is abrupt — maintained composite to cracked paving to organic urban decay in thirty meters. Signal infrastructure becomes intermittent. Something has been zip-tied to a structural post at eye height — a warning placard, or a marker. The perimeter gate lies west."
+exits = { west = "garden_gate", east = "deep_woods" }
+items = ["nailed_notice", "ignition_chip"]
+
+[[rooms]]
+id = "master_bedroom"
+name = "Director's Suite"
+description = "The Director's private quarters carry the weight of designed authority even in abandonment. A sleeping platform with environmental regulation fixtures dominates the center. A full-wall display is fractured in one corner, running a corrupted loop — somewhere in the data stream, the face of a woman appears for a fraction of a second between signal bursts. A heating panel near the floor is still warm. Someone was here after the dust settled everywhere else."
+exits = { south = "upper_landing", north = "smoking_room" }
+items = ["data_brush", "folded_letter", "tarnished_locket"]
+
+[[rooms]]
+id = "childs_room"
+name = "Residential Unit 7"
+description = "A small family residential unit preserved in its last state. A child's ergonomic chair faces the far wall, as if its occupant stepped away a moment ago. Drawings cover the lower half of the wall — cityscapes, arcology cross-sections, wiring diagrams drawn from memory, and then further along, something darker and harder to resolve that you cannot immediately name. An antique audio player sits on the shelf above the sleeping station, lid raised."
+exits = { west = "upper_landing" }
+items = ["music_box", "wall_inscription", "synthetic_doll"]
+
+[[rooms]]
+id = "guest_room"
+name = "Visitor Suite"
+description = "A visitor suite never properly vacated. A travel case sits at the foot of the sleeping platform, still fastened. A coat is folded over the desk chair. A terminal on the desk is locked in standby mode. A small writing surface near the viewport holds a partial printed message, the cursor blinking at the last typed word, waiting for input that never came."
+exits = { east = "upper_landing" }
+items = ["field_case", "unfinished_letter", "pocket_watch"]
+
+[[rooms]]
+id = "gravel_path"
+name = "Corporate Approach"
+description = "A broad marked approach lane curves south from the arcology's entrance plaza, swallowed by urban fog within fifty meters. Corporate wayfinding posts flank the lane at intervals, their directional LEDs long dark. The composite surface crunches with debris underfoot — broken panel fragments, a corroded credit chip. The entrance plaza looms to the north."
+exits = { north = "front_porch", south = "gatehouse" }
+items = ["shattered_panel", "old_credit_chip"]
+
+[[rooms]]
+id = "kitchen_garden"
+name = "Hydroponic Bay"
+description = "A sealed production bay behind the supply room, its grow-racks running unchecked in the residual humidity. A few hardy cultivars still produce despite the neglect — herbs, something bitter and unidentified that may once have been labeled. A collapsed grow-frame lies in one corner, its LED element still faintly functional despite everything. The supply room access door is ajar to the north."
+exits = { north = "pantry", east = "greenhouse" }
+items = ["bio_sample", "broken_grow_frame"]
+
+[[rooms]]
+id = "attic"
+name = "Rooftop Installation"
+description = "A low-clearance technical space on the building's upper level, packed with the accumulated infrastructure of decades. Server clusters are stacked three deep, most dark and sealed. A segmented skylight admits flat grey ambient city light from above. The smell is heat-stressed polymer and something older beneath — the particular scent of systems that ran hot for years and have since gone quiet. Not everything stored here has lost its value."
+exits = { down = "upper_landing", up = "tower_room" }
+items = ["old_photograph", "signal_stand"]
+
+[[rooms]]
+id = "chapel"
+name = "Memorial Chamber"
+description = "A small chamber maintained as a corporate memorial to Axiom's founding figures, barely wider than two display alcoves. A polished tribute surface occupies the far wall, its motivational text worn to grey suggestions. Commemorative glow-cells cluster on a recessed shelf below, most exhausted. The access rail before the tribute surface is polished smooth where decades of company events have brought people to it. Whatever the founders intended to inspire here, time has formed its own opinion."
+exits = { east = "coat_room" }
+items = ["founders_codex", "power_column"]
+
+[[rooms]]
+id = "ballroom"
+name = "Entertainment Deck"
+description = "A long event space that once served as Axiom's social infrastructure as much as its financial kind. The raised flooring is warped at one seam, the mirrored display panels along the walls running dead, their surfaces filmed with static residue. A concert system sits at the far end, its power unit still connected, a performance file paused mid-sequence on the interface display. A score is still up on the stand, as if the performers merely stepped out."
+exits = { east = "library" }
+items = ["performance_file", "broken_resonator"]
+
+[[rooms]]
+id = "servants_quarters"
+name = "Staff Quarters"
+description = "A low-clearance dormitory block — six sleeping stations, each assigned by personnel number rather than name. Locker units and personal storage crates complete the arrangement. The single viewport looks out at a maintenance shaft: a narrow rectangle of dim ambient light. One crate has been left open. Whatever was in it is gone, but a message has been scratched into the inside of the lid."
+exits = { south = "washroom" }
+items = ["alloy_cup", "ops_manual"]
+
+[[rooms]]
+id = "tower_room"
+name = "Comms Tower"
+description = "A circular chamber at the apex of the arcology's communications tower, reached only through the rooftop installation hatch. A signal array on a precision mount dominates the space, aimed through a hardened panel at the sky. Orbital maps cover the walls, annotated in a cramped and increasingly urgent hand. The last observation is dated three years ago. The entry reads only: still transmitting."
+exits = { down = "attic" }
+items = ["telescope_lens", "star_chart"]
+
+[[rooms]]
+id = "gatehouse"
+name = "Perimeter Post"
+description = "A small security module set back from the deactivated vehicle barrier at the arcology's main entrance. The interior is minimal: a monitoring station, a dead terminal, a locked equipment case. The access log on the station records every entry and departure at the arcology over fifteen years of automated service. The final entry is flagged in red, the record partially corrupted as if something interfered with the logging system at the moment it was written."
+exits = { north = "gravel_path" }
+items = ["visitors_log", "corroded_link"]
+
+[[rooms]]
+id = "deep_woods"
+name = "The Sprawl"
+description = "The urban sprawl closes in until the marked path is no longer a path. Infrastructure debris and reclaimed surface material cover the ground in uneven layers. Someone has disturbed the composite in a rough outline ahead — broken open and turned, as if something was recently buried here, or extracted. A marked post has been driven into a structural remnant nearby. The arcology is not visible from here. The signal is flat. You are on your own."
+exits = { west = "woods_edge" }
+items = ["boundary_marker", "motion_trap"]
+
+[[rooms]]
+id = "greenhouse"
+name = "Bio-Research Lab"
+description = "A sealed research module attached to the hydroponic bay, most of its transparent panels still intact. Inside, the trapped humidity is startling after the dry corridors above. Unchecked culture growth has pressed against every surface. Someone has recently cleared a working area at one bench — tools arranged, substrate freshly turned, a culture established in a sealed nutrient vessel that is still cycling."
+exits = { west = "kitchen_garden" }
+items = ["culture_pack", "substrate_tool"]
+
+[[rooms]]
+id = "stable"
+name = "Vehicle Bay"
+description = "An enclosed vehicle bay built for four units, all long since removed or impounded. Docking stations stand empty, their charge connections hanging. A maintenance station at the far end still holds diagnostic tools and connector sets, rigid with inactivity. Someone has etched text into the composite wall of the last bay, low down, at the height of someone not yet fully grown. You have to crouch to read it."
+exits = { south = "dead_garden" }
+items = ["vehicle_emblem", "antenna_rod"]
+
+[[rooms]]
+id = "vault"
+name = "Deep Storage"
+description = "A low secured chamber behind the Protocol Core, its access doors hanging open on broken locks. Recessed storage niches line the walls — items placed with deliberate precision. Most are empty, their contents removed or transferred. One niche holds a sealed case that is far too deliberately positioned to have arrived there recently. It has been waiting to be found, or has been waiting to not be found, and the two are not always different."
+exits = { east = "crypt" }
+items = ["security_case", "auth_seal"]
+
+[[rooms]]
+id = "smoking_room"
+name = "Private Lounge"
+description = "An executive private lounge at the far end of the upper corridor, past the Director's suite. Acoustic panels absorb the ambient city noise from outside. Deep chairs and a residual chemical smell from whatever the Director used to manage pressure over long decision cycles. A display cabinet holds a collection of antique tobacco implements, one space empty. The operations console in the corner holds a ledger — not financial records but a log of executive decisions. The entries grow shorter and more clipped toward the end, and the final section has been deliberately cleared."
+exits = { south = "master_bedroom" }
+items = ["stim_pipe", "estate_ledger"]
