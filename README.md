@@ -1,6 +1,6 @@
-# Dark Adventure
+# Neon Descent
 
-A gothic text adventure set in Darkwood Manor. Written in Rust.
+A cyberpunk text adventure set in Axiom Arcology, a decaying corporate arcology. Written in Rust using macroquad.
 
 ## Running the game
 
@@ -12,55 +12,78 @@ Or build a release binary:
 
 ```bash
 cargo build --release
-./target/release/dark_adventure
+./target/release/neon_descent
 ```
 
-## Building a universal macOS binary
+## Building a macOS .app bundle
 
 ```bash
-./build.sh
+./package_mac.sh
 ```
 
-Output: `dist/dark_adventure` — runs natively on both Apple Silicon and Intel Macs.
+Output: `Neon Descent.app` — drag to Applications or share directly. All assets are embedded in the binary; no separate files required.
 
 ## Commands
 
-| Input                 | Action                          |
-|-----------------------|---------------------------------|
-| LOOK / L              | Describe current room           |
-| EXAMINE \<item\> / X  | Look at something closely       |
-| NORTH / N             | Move north                      |
-| SOUTH / S             | Move south                      |
-| EAST / E              | Move east                       |
-| WEST / W              | Move west                       |
-| UP / U                | Move up                         |
-| DOWN / D              | Move down                       |
-| TAKE \<item\>         | Pick up an item                 |
-| DROP \<item\>         | Drop an item                    |
-| UNLOCK \<thing\>      | Unlock a door or mechanism      |
-| INVENTORY / I         | List carried items              |
-| SCORE                 | Show current score and rank     |
-| QUIT / Q              | Exit the game                   |
+| Input | Action |
+|---|---|
+| LOOK / L | Describe current room |
+| EXAMINE \<item\> / X | Look at something closely |
+| NORTH / SOUTH / EAST / WEST / UP / DOWN | Move in a direction |
+| N / S / E / W / U / D | Move shorthand |
+| READ \<item\> | Read a document or inscription |
+| TAKE \<item\> | Pick up an item |
+| DROP \<item\> | Drop an item |
+| UNLOCK \<thing\> | Unlock a door, chest, or mechanism |
+| WEAR \<item\> | Put something on |
+| REMOVE \<item\> | Take something off |
+| PUSH / PULL / TURN \<thing\> | Try to move something |
+| PRESS \<thing\> | Press something |
+| KNOCK \[thing\] | Knock on a door or surface |
+| SMELL \[item\] | Smell the room or a specific item |
+| LISTEN | Listen to the room |
+| TOUCH / FEEL \[item\] | Touch something |
+| SEARCH | Search the room more carefully |
+| ASK \<name\> ABOUT \<topic\> | Talk to an NPC |
+| TELL \<name\> ABOUT \<topic\> | Tell an NPC something |
+| INVENTORY / I | List what you're carrying |
+| SCORE | Show current score and rank |
+| WAIT / Z | Let time pass |
+| AGAIN / G | Repeat the last command |
+| UNDO | Undo the last action |
+| SAVE | Save progress to disk |
+| RESTORE | Restore a saved game |
+| RESTART | Start over from the beginning |
+| VERBOSE / BRIEF / SUPERBRIEF | Control room description verbosity |
+| QUIT / Q | Exit the game |
 
 ## Project structure
 
 ```
-dark-adventure/
+neon-adventure/
 ├── Cargo.toml
-├── rooms.toml          # all 28 rooms — edit to change the world
-├── npcs.toml           # NPC encounter dialogue
-├── build.sh            # universal macOS build script
+├── package_mac.sh      # builds a macOS .app bundle
+├── rooms.toml          # all rooms — edit to change the world
+├── npcs.toml           # NPC dialogue
+├── mobs.toml           # wandering mob definitions
+├── map.txt             # ASCII map (in-game MAP command)
 └── src/
     ├── main.rs         # entry point and game loop
+    ├── app.rs          # game state and frame dispatch
     ├── title.rs        # title screen
+    ├── gfx.rs          # rendering and text layout
+    ├── input.rs        # keyboard input and history
+    ├── ui.rs           # styled text buffer
     ├── world.rs        # loads rooms.toml
     ├── npcs.rs         # loads npcs.toml
+    ├── mobs.rs         # loads mobs.toml, wandering mob logic
+    ├── ambient.rs      # atmospheric ambient messages
     ├── player.rs       # player state: position, inventory, score
     ├── parser.rs       # tokenizes input into verb + noun
-    └── commands.rs     # all game actions and puzzle logic
+    ├── commands.rs     # all game actions and puzzle logic
+    └── save.rs         # save / restore / undo snapshots
 ```
 
 ## By
 
 J. Collins
-# neon-adventure
