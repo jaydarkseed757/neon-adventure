@@ -14,6 +14,15 @@ pub struct InputState {
     blink_timer:  f64,
     pub cursor_visible: bool,
     backspace_next: f64, // time of next backspace repeat fire
+
+    // Tab completion
+    completion_verbs: Vec<String>,
+    completion_nouns: Vec<String>,
+    tab_matches:      Vec<String>, // current match list
+    tab_cycle_idx:    usize,       // position within tab_matches
+    tab_word_start:   usize,       // where the completed word begins (byte idx)
+    tab_is_verb:      bool,        // completing first word (verb) vs noun
+    in_tab_cycle:     bool,        // true while consecutive Tabs are cycling
 }
 
 impl InputState {
@@ -26,7 +35,21 @@ impl InputState {
             blink_timer: 0.0,
             cursor_visible: true,
             backspace_next: f64::MAX,
+
+            completion_verbs: Vec::new(),
+            completion_nouns: Vec::new(),
+            tab_matches:      Vec::new(),
+            tab_cycle_idx:    0,
+            tab_word_start:   0,
+            tab_is_verb:      false,
+            in_tab_cycle:     false,
         }
+    }
+
+    /// Set the word lists used by tab completion. Call once per frame before handle_frame().
+    pub fn set_completions(&mut self, verbs: Vec<String>, nouns: Vec<String>) {
+        self.completion_verbs = verbs;
+        self.completion_nouns = nouns;
     }
 
     /// Process input for one frame.
@@ -40,6 +63,13 @@ impl InputState {
         if now - self.blink_timer > 0.5 {
             self.cursor_visible = !self.cursor_visible;
             self.blink_timer = now;
+            dirty = true;
+        }
+
+        // Tab completion — handled before printable chars so Tab isn't also
+        // consumed as a control character by get_char_pressed.
+        if is_key_pressed(KeyCode::Tab) {
+            self.try_complete();
             dirty = true;
         }
 
@@ -130,6 +160,60 @@ impl InputState {
         (None, dirty)
     }
 
+    /// Complete the word at/before the cursor.
+    /// Consecutive Tab presses cycle through all matches.
+    fn try_complete(&mut self) {
+        if !self.in_tab_cycle {
+            // --- Start a new completion cycle ---
+            let before = self.buffer[..self.cursor_pos].to_lowercase();
+            let word_start = before.rfind(' ').map_or(0, |i| i + 1);
+            let partial = &before[word_start..];
+            let is_verb = !before.contains(' ');
+
+            let candidates = if is_verb {
+                &self.completion_verbs
+            } else {
+                &self.completion_nouns
+            };
+
+            let mut matches: Vec<String> = candidates
+                .iter()
+                .filter(|c| c.starts_with(partial))
+                .cloned()
+                .collect();
+
+            if matches.is_empty() { return; }
+            matches.sort();
+
+            self.tab_word_start = word_start;
+            self.tab_is_verb    = is_verb;
+            self.tab_matches    = matches;
+            self.tab_cycle_idx  = 0;
+            self.in_tab_cycle   = true;
+        } else {
+            // --- Advance within existing cycle ---
+            self.tab_cycle_idx = (self.tab_cycle_idx + 1) % self.tab_matches.len();
+        }
+
+        let completion = self.tab_matches[self.tab_cycle_idx].clone();
+
+        // Preserve text that was after the cursor
+        let after = self.buffer[self.cursor_pos..].to_string();
+
+        // Replace the partial word with the completion
+        self.buffer.truncate(self.tab_word_start);
+        self.buffer.push_str(&completion);
+
+        // Add a trailing space after verbs so the user can type the noun immediately
+        if self.tab_is_verb {
+            self.buffer.push(' ');
+        }
+
+        // cursor lands just after the completion (before any preserved tail)
+        self.cursor_pos = self.buffer.len();
+        self.buffer.push_str(&after);
+    }
+
     fn do_backspace(&mut self) {
         if self.cursor_pos > 0 {
             let ch = self.buffer[..self.cursor_pos].chars().last().unwrap();
@@ -174,8 +258,10 @@ impl InputState {
         }
     }
 
+    /// Reset cursor blink and break any active Tab cycle.
     fn reset_blink(&mut self) {
         self.cursor_visible = true;
         self.blink_timer = get_time();
+        self.in_tab_cycle = false;
     }
 }

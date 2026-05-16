@@ -103,6 +103,7 @@ impl App {
             }
 
             AppState::Playing => {
+                self.update_completions();
                 let (submitted, _) = self.input.handle_frame();
 
                 if let Some(ref cmd) = submitted {
@@ -152,6 +153,44 @@ impl App {
         gfx::render_status_bar(&self.player, &self.world, &self.fonts);
         gfx::render_output_area(&self.rendered, &self.scroll, &self.fonts);
         gfx::render_input_bar(&self.input, &self.fonts);
+    }
+
+    /// Rebuild the verb + noun lists for tab completion and push them to InputState.
+    fn update_completions(&mut self) {
+        // Static verb list — canonical user-facing commands, alphabetically sorted
+        let verbs: Vec<String> = vec![
+            "again", "ask", "brief", "drop", "examine", "help", "inventory",
+            "knock", "listen", "look", "north", "south", "east", "west", "up", "down",
+            "press", "pull", "push", "quit", "read", "remove", "restart", "restore",
+            "save", "score", "search", "smell", "superbrief", "take", "tell", "touch",
+            "turn", "undo", "unlock", "verbose", "wait", "wear",
+        ].into_iter().map(String::from).collect();
+
+        // Dynamic noun list — items in room, inventory, exits, NPC in room
+        let mut nouns: Vec<String> = Vec::new();
+
+        if let Some(room) = self.world.rooms.get(&self.player.current_room) {
+            for item in &room.items {
+                nouns.push(item.clone());
+            }
+            for dir in room.exits.keys() {
+                nouns.push(dir.clone());
+            }
+        }
+        for item in &self.player.inventory {
+            nouns.push(item.clone());
+        }
+        if let Some(npc) = self.npc_store.get(&self.player.current_room) {
+            let name = npc.name.to_lowercase().replace(' ', "_");
+            nouns.push(name);
+            for alias in &npc.aliases {
+                nouns.push(alias.to_lowercase());
+            }
+        }
+        nouns.sort();
+        nouns.dedup();
+
+        self.input.set_completions(verbs, nouns);
     }
 
     fn process_command(&mut self, input: &str) -> Action {
