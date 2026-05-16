@@ -45,8 +45,6 @@ pub struct App {
     // UNDO / AGAIN state
     pub undo_snapshot: Option<save::GameSnapshot>,
     pub last_input:    Option<String>,
-
-    pub needs_redraw: bool,
 }
 
 impl App {
@@ -88,7 +86,6 @@ impl App {
             undo_snapshot: None,
             last_input:    None,
             last_width:    0.0,
-            needs_redraw:  true,
         }
     }
 
@@ -102,17 +99,14 @@ impl App {
                     ui::print_blank();
                     commands::look(&self.player, &self.world, &self.mob_store);
                     self.drain_to_buf();
-                    self.needs_redraw = true;
                 }
             }
 
             AppState::Playing => {
-                let (submitted, input_dirty) = self.input.handle_frame();
-                self.needs_redraw |= input_dirty;
+                let (submitted, _) = self.input.handle_frame();
 
                 if let Some(ref cmd) = submitted {
                     let action = self.process_command(cmd);
-                    self.needs_redraw = true;
                     match action {
                         Action::Quit => {
                             self.state = AppState::Won;
@@ -142,8 +136,7 @@ impl App {
             }
 
             AppState::Won => {
-                let (_submitted, input_dirty) = self.input.handle_frame();
-                self.needs_redraw |= input_dirty;
+                self.input.handle_frame();
                 self.render_frame();
             }
         }
@@ -153,17 +146,12 @@ impl App {
         let (_dx, dy) = mouse_wheel();
         if dy != 0.0 {
             self.scroll.scroll_by(-dy * gfx::LINE_H * 3.0);
-            self.needs_redraw = true;
         }
-        self.needs_redraw |= self.rebuild_render_cache();
-
-        if self.needs_redraw {
-            clear_background(gfx::BG);
-            gfx::render_status_bar(&self.player, &self.world, &self.fonts);
-            gfx::render_output_area(&self.rendered, &self.scroll, &self.fonts);
-            gfx::render_input_bar(&self.input, &self.fonts);
-            self.needs_redraw = false;
-        }
+        self.rebuild_render_cache();
+        clear_background(gfx::BG);
+        gfx::render_status_bar(&self.player, &self.world, &self.fonts);
+        gfx::render_output_area(&self.rendered, &self.scroll, &self.fonts);
+        gfx::render_input_bar(&self.input, &self.fonts);
     }
 
     fn process_command(&mut self, input: &str) -> Action {
@@ -223,8 +211,7 @@ impl App {
         self.scroll_buf.extend(ui::drain());
     }
 
-    /// Returns true if the render cache changed (new content or window resize).
-    fn rebuild_render_cache(&mut self) -> bool {
+    fn rebuild_render_cache(&mut self) {
         let w = screen_width();
         let resized = (w - self.last_width).abs() > 1.0;
         if resized {
@@ -241,9 +228,7 @@ impl App {
             );
             self.prev_buf_len = self.scroll_buf.len();
             self.scroll.on_new_content(&self.rendered);
-            return true;
         }
-        resized
     }
 }
 
