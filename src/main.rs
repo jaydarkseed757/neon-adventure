@@ -38,8 +38,12 @@ async fn main() {
     let mut app = app::App::new().await;
 
     loop {
-        clear_background(gfx::BG);
         app.frame().await;
+        // Cap title screen at ~30fps: sleep past one VSync period so the next
+        // next_frame() catches every other tick rather than every one.
+        if matches!(app.state, app::AppState::Title) {
+            std::thread::sleep(std::time::Duration::from_millis(18));
+        }
         next_frame().await;
     }
 }

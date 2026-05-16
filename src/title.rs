@@ -1,15 +1,16 @@
 use macroquad::color::Color;
 use macroquad::input::{is_key_pressed, KeyCode};
+use macroquad::prelude::clear_background;
 use macroquad::shapes::draw_rectangle;
 use macroquad::text::Font;
 use macroquad::texture::{draw_texture_ex, DrawTextureParams, Texture2D};
-use macroquad::time::get_time;
+use macroquad::time::{get_frame_time, get_time};
 use macroquad::window::{screen_height, screen_width};
 
 pub struct TitleScreen {
-    texture:        Option<Texture2D>,
+    texture:         Option<Texture2D>,
     scanline_offset: f32,
-    enter_time:     f64,
+    enter_time:      f64,
 }
 
 impl TitleScreen {
@@ -37,6 +38,8 @@ impl TitleScreen {
         let now = get_time();
         let w   = screen_width();
         let h   = screen_height();
+
+        clear_background(macroquad::color::BLACK);
 
         // --- Draw the title image scaled to fill the window ---
         if let Some(ref tex) = self.texture {
@@ -66,8 +69,8 @@ impl TitleScreen {
             draw_rectangle(0.0, 0.0, w, h, macroquad::color::BLACK);
         }
 
-        // --- Scanlines over the top ---
-        self.scanline_offset = (self.scanline_offset + 0.5) % 4.0;
+        // --- Scanlines over the top (time-based so speed is FPS-independent) ---
+        self.scanline_offset = (self.scanline_offset + get_frame_time() * 30.0) % 4.0;
         let mut sy = self.scanline_offset;
         while sy < h {
             draw_rectangle(0.0, sy, w, 1.0, Color::new(0.0, 0.0, 0.0, 0.18));
