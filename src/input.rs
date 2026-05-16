@@ -29,14 +29,18 @@ impl InputState {
         }
     }
 
-    /// Process input for one frame. Returns a submitted command string if Enter was pressed.
-    pub fn handle_frame(&mut self) -> Option<String> {
+    /// Process input for one frame.
+    /// Returns `(submitted, dirty)` where `submitted` is a command string if Enter was
+    /// pressed, and `dirty` is true if any visual state changed this frame.
+    pub fn handle_frame(&mut self) -> (Option<String>, bool) {
         let now = get_time();
+        let mut dirty = false;
 
         // Cursor blink
         if now - self.blink_timer > 0.5 {
             self.cursor_visible = !self.cursor_visible;
             self.blink_timer = now;
+            dirty = true;
         }
 
         // Printable characters
@@ -46,6 +50,7 @@ impl InputState {
                 self.cursor_pos += ch.len_utf8();
                 self.history_pos = None;
                 self.reset_blink();
+                dirty = true;
             }
         }
 
@@ -54,14 +59,17 @@ impl InputState {
             self.do_backspace();
             self.backspace_next = now + REPEAT_INITIAL;
             self.reset_blink();
+            dirty = true;
         } else if is_key_down(KeyCode::Backspace) && now >= self.backspace_next {
             self.do_backspace();
             self.backspace_next = now + REPEAT_RATE;
             self.reset_blink();
+            dirty = true;
         }
         if is_key_pressed(KeyCode::Delete) {
             self.do_delete();
             self.reset_blink();
+            dirty = true;
         }
 
         // Cursor movement
@@ -69,29 +77,35 @@ impl InputState {
             let ch = self.buffer[..self.cursor_pos].chars().last().unwrap();
             self.cursor_pos -= ch.len_utf8();
             self.reset_blink();
+            dirty = true;
         }
         if is_key_pressed(KeyCode::Right) && self.cursor_pos < self.buffer.len() {
             let ch = self.buffer[self.cursor_pos..].chars().next().unwrap();
             self.cursor_pos += ch.len_utf8();
             self.reset_blink();
+            dirty = true;
         }
         if is_key_pressed(KeyCode::Home) {
             self.cursor_pos = 0;
             self.reset_blink();
+            dirty = true;
         }
         if is_key_pressed(KeyCode::End) {
             self.cursor_pos = self.buffer.len();
             self.reset_blink();
+            dirty = true;
         }
 
         // History navigation
         if is_key_pressed(KeyCode::Up) {
             self.history_up();
             self.reset_blink();
+            dirty = true;
         }
         if is_key_pressed(KeyCode::Down) {
             self.history_down();
             self.reset_blink();
+            dirty = true;
         }
 
         // Submit on Enter
@@ -110,10 +124,10 @@ impl InputState {
             self.history_pos = None;
             self.backspace_next = f64::MAX;
             self.reset_blink();
-            return Some(submitted);
+            return (Some(submitted), true);
         }
 
-        None
+        (None, dirty)
     }
 
     fn do_backspace(&mut self) {

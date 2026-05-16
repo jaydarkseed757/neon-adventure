@@ -25,10 +25,12 @@ impl Rng {
     }
 
     fn range(&mut self, n: usize) -> usize {
+        if n == 0 { return 0; }
         (self.next() as usize) % n
     }
 
     fn one_in(&mut self, n: u64) -> bool {
+        if n == 0 { return false; }
         self.next() % n == 0
     }
 }

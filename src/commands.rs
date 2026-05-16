@@ -1120,7 +1120,7 @@ fn push_pull(verb: &str, noun: &str, player: &Player) {
 
 fn knock(noun: Option<&str>, player: &Player) {
     let response = match noun {
-        Some(n) if n.contains("iron") || n.contains("door") && player.current_room == "wine_cellar" =>
+        Some(n) if (n.contains("iron") || n.contains("door")) && player.current_room == "wine_cellar" =>
             "You knock on the security door. The sound rings hollow and deep, as if the passage beyond is extensive. \
              Then — silence. Then a change in the carrier frequency from somewhere in that passage. \
              Something has registered your input.",
