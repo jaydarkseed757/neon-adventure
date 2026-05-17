@@ -1297,17 +1297,35 @@ fn print_version() {
 }
 
 fn print_runtime(player: &Player, world: &World, npcs: &NpcStore, mobs: &MobStore) {
-    let total_rooms   = world.rooms.len();
-    let visited       = player.visited.len();
-    let unvisited     = total_rooms.saturating_sub(visited);
+    let total_rooms = world.rooms.len();
+    let visited     = player.visited.len();
+    let unvisited   = total_rooms.saturating_sub(visited);
+    let explore_pct = if total_rooms > 0 { visited * 100 / total_rooms } else { 0 };
 
     let items_in_world: usize = world.rooms.values().map(|r| r.items.len()).sum();
     let items_carried = player.inventory.len();
+    let items_worn    = player.worn.len();
 
     let total_exits: usize = world.rooms.values().map(|r| r.exits.len()).sum();
+    let avg_exits = if total_rooms > 0 {
+        total_exits as f32 / total_rooms as f32
+    } else { 0.0 };
+    let dead_ends: usize = world.rooms.values().filter(|r| r.exits.len() == 1).count();
+    let hubs:      usize = world.rooms.values().filter(|r| r.exits.len() >= 4).count();
 
     let npc_count = npcs.count();
     let mob_count = mobs.count();
+
+    // Mob locations: "the cat → Server Vault"
+    let mob_locations: Vec<String> = mobs.mobs.iter().map(|m| {
+        let room_name = world.rooms.get(&m.current_room)
+            .map(|r| r.name.as_str())
+            .unwrap_or("?");
+        format!("{} → {}", m.name, room_name)
+    }).collect();
+
+    let milestones   = player.scored_events.len();
+    let topics_heard = player.dialogue_seen.len();
 
     let mem_str = match rss_bytes() {
         Some(b) if b >= 1024 * 1024 => format!("{:.1} MB", b as f64 / (1024.0 * 1024.0)),
@@ -1317,16 +1335,23 @@ fn print_runtime(player: &Player, world: &World, npcs: &NpcStore, mobs: &MobStor
 
     ui::print_blank();
     ui::print_room_header("RUNTIME STATS");
-    ui::print_plain(&format!("  {:<22} {}", "Rooms", format!("{total_rooms}  (visited: {visited}, unvisited: {unvisited})")));
-    ui::print_plain(&format!("  {:<22} {}", "Items in world",  items_in_world));
-    ui::print_plain(&format!("  {:<22} {}", "Items carried",   items_carried));
-    ui::print_plain(&format!("  {:<22} {}", "NPCs",            npc_count));
-    let mob_names: Vec<&str> = mobs.mobs.iter().map(|m| m.name.as_str()).collect();
-    ui::print_plain(&format!("  {:<22} {} ({})", "Mobs", mob_count, mob_names.join(", ")));
-    ui::print_plain(&format!("  {:<22} {}", "Exit links",      total_exits));
-    ui::print_plain(&format!("  {:<22} {} / 100", "Score",      player.score));
-    ui::print_plain(&format!("  {:<22} {}  (turn {})", "Time", ambient::time_label(player.turn), player.turn));
-    ui::print_plain(&format!("  {:<22} {}", "Memory (RSS)",    mem_str));
+    ui::print_plain(&format!("  {:<22} {}  (visited: {}, unvisited: {}, {}% explored)",
+        "Rooms", total_rooms, visited, unvisited, explore_pct));
+    ui::print_plain(&format!("  {:<22} {}  (avg: {:.1}/room, dead-ends: {}, hubs ≥4: {})",
+        "Exits", total_exits, avg_exits, dead_ends, hubs));
+    ui::print_plain(&format!("  {:<22} {}  (carried: {}, worn: {})",
+        "Items in world", items_in_world, items_carried, items_worn));
+    ui::print_plain(&format!("  {:<22} {}", "Milestones reached",  milestones));
+    ui::print_plain(&format!("  {:<22} {}", "Dialogue topics seen", topics_heard));
+    ui::print_plain(&format!("  {:<22} {}", "NPCs", npc_count));
+    if mob_count > 0 {
+        ui::print_plain(&format!("  {:<22} {}  ({})", "Mobs", mob_count,
+            mob_locations.join(", ")));
+    }
+    ui::print_plain(&format!("  {:<22} {} / 100", "Score", player.score));
+    ui::print_plain(&format!("  {:<22} {}  (turn {})", "Time",
+        ambient::time_label(player.turn), player.turn));
+    ui::print_plain(&format!("  {:<22} {}", "Memory (RSS)", mem_str));
     ui::print_blank();
 }
 
