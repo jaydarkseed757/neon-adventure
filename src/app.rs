@@ -163,7 +163,7 @@ impl App {
             "knock", "listen", "look", "north", "south", "east", "west", "up", "down",
             "press", "pull", "push", "quit", "read", "remove", "restart", "restore",
             "save", "score", "search", "smell", "superbrief", "take", "tell", "touch",
-            "turn", "undo", "unlock", "verbose", "wait", "wear",
+            "transcript", "turn", "undo", "unlock", "verbose", "wait", "wear",
         ].into_iter().map(String::from).collect();
 
         // Dynamic noun list — items in room, inventory, exits, NPC in room
@@ -196,6 +196,22 @@ impl App {
     fn process_command(&mut self, input: &str) -> Action {
         // Echo the player's command into the output
         self.scroll_buf.push(ui::StyledLine::echo(input));
+
+        // TRANSCRIPT — dump the full session log to a plain-text file
+        if input == "transcript" {
+            let path = "neon_descent_transcript.txt";
+            let text: String = self.scroll_buf
+                .iter()
+                .map(|line| line.segments.iter().map(|s| s.text.as_str()).collect::<String>())
+                .collect::<Vec<_>>()
+                .join("\n");
+            match std::fs::write(path, text) {
+                Ok(()) => ui::print_dim(&format!("Transcript saved to {}.", path)),
+                Err(e) => ui::print_error(&format!("Transcript failed: {}", e)),
+            }
+            self.drain_to_buf();
+            return Action::Continue;
+        }
 
         // UNDO — handled here, not in commands::handle
         if input == "undo" {

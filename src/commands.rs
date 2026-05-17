@@ -1385,6 +1385,7 @@ fn print_help() {
     ui::print_plain("  RESTORE               — restore a previously saved game");
     ui::print_plain("  RESTART               — start over from the beginning");
     ui::print_plain("  UNDO                  — undo the last action");
+    ui::print_plain("  TRANSCRIPT            — save the full session log to a text file");
     ui::print_plain("  QUIT / Q              — exit the game");
     ui::print_blank();
     ui::print_room_header("CONVERSATION");
