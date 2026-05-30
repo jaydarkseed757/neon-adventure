@@ -35,7 +35,7 @@ src/
 ├── mobs.toml      — 6 mob definitions
 ├── npcs.toml      — 5 NPC definitions with dialogue trees
 ├── nodes.toml     — 7 net node definitions (the cyberspace layer)
-└── map.txt        — ASCII map for the in-game MAP command
+└── map.txt        — ASCII room + net node map (shown by the MAP cheat)
 
 build.rs           — Embeds build date, target triple, profile, rustc version
 ```

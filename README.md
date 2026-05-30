@@ -72,7 +72,7 @@ neon-adventure/
 ├── npcs.toml           # NPC dialogue
 ├── mobs.toml           # wandering mob definitions
 ├── nodes.toml          # net node map (cyberspace layer)
-├── map.txt             # ASCII map (in-game MAP command)
+├── map.txt             # ASCII room + net node map
 └── src/
     ├── main.rs         # entry point and game loop
     ├── app.rs          # game state and frame dispatch; net routing

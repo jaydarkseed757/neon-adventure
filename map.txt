@@ -9,7 +9,7 @@ AXIOM ARCOLOGY — ROOM MAP
         │
   [VISITOR SUITE]──[EXECUTIVE LEVEL]──[RESIDENTIAL UNIT 7]
                           │ (down to DATA ARCHIVE)
-                          │ (up to ROOFTOP INSTALLATION — locked, needs portrait key)
+                          │ (up to ROOFTOP INSTALLATION — locked, needs biometric chip)
 
 
 ── GROUND FLOOR ─────────────────────────────────────────────
@@ -59,3 +59,27 @@ AXIOM ARCOLOGY — ROOM MAP
 
 
 37 rooms total.
+
+
+══════════════════════════════════════════════════════════════
+THE NET — jack in with your cyberdeck (JACK IN)
+══════════════════════════════════════════════════════════════
+
+                       [ARCHIVE CORE]
+                             │ archive
+   [PERIMETER] ── perimeter ─┤
+                             │
+   [EXEC PARTITION] ── exec ─┤── INTRANET GATEWAY ── relay ── [UPLOAD RELAY]
+                             │
+                             │ vault
+                       [VAULT SPINE] ══ ICE ══ [PROTOCOL CORE]
+
+  JACK IN from any room with signal; JACK OUT to leave.
+  At a node:  LOOK · GO <route> · READ · BYPASS · RETURN
+  Gateway routes: archive, perimeter, exec, vault, relay.
+  The VAULT SPINE → PROTOCOL CORE link is sealed by ICE —
+  BYPASS it with the iron ring's master access pattern.
+  RETURN at the UPLOAD RELAY discharges the debt, once the full
+  legacy has been delivered to the lobby console.
+
+7 net nodes total.
