@@ -24,6 +24,14 @@ pub struct Player {
     pub verbose_mode: VerboseMode,
     /// `Some(node_id)` while jacked into the net; `None` in the physical world.
     pub net_node: Option<String>,
+    /// Neural integrity (0–100). Drained by black ICE / hostile daemons in the
+    /// net; regenerates while in the physical world. Hitting 0 flatlines you.
+    pub integrity: u8,
+    /// Active trace level (0–100). Climbs while jacked in, resets on jack out.
+    /// Reaching 100 flatlines you.
+    pub trace: u8,
+    /// Scavenged currency, spent at the fixer.
+    pub credits: u32,
 }
 
 impl Player {
@@ -42,6 +50,9 @@ impl Player {
             dialogue_seen: HashSet::new(),
             verbose_mode: VerboseMode::Brief,
             net_node: None,
+            integrity: 100,
+            trace: 0,
+            credits: 0,
         }
     }
 

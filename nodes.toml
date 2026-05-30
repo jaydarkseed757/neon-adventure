@@ -11,6 +11,7 @@ id = "entry_relay"
 name = "Intranet Gateway"
 description = "You surface inside the Axiom intranet. A cold blue lattice stretches in every direction, most of it dark — whole districts of the network gone to static. A few routes still carry light. The ARCHIVE glows steady to one side; a PERIMETER channel flickers red with a corrupted record; an EXECUTIVE partition sits behind a thin haze of access control; the VAULT spine descends into deeper ICE; and a single RELAY pulses amber, waiting, the same colour as the console in the lobby far above."
 links = { archive = "archive_node", perimeter = "gatehouse_log", exec = "purge_log", vault = "vault_ice", relay = "upload_relay" }
+trace_rate = 2
 data = "A gateway banner cycles slowly: AXIOM ARCOLOGY — INTERNAL MESH — UNRESOLVED ACCOUNTING FLAG SET. The flag has been set for three years. Nothing has cleared it."
 
 [[nodes]]
@@ -18,6 +19,7 @@ id = "archive_node"
 name = "Archive Core"
 description = "The Analyst's domain rendered in data: endless shelving of indexed light, much of it deliberately degraded. Something patient watches you parse it. This is where the building keeps its memory of what was taken."
 links = { back = "entry_relay" }
+trace_rate = 3
 data = "ANALYST // SUMMARY FOR THE AUDITOR WHO COMES AFTER: Axiom was built on a substrate it did not own. The founding agreement of 2047 specifies a return in perpetuity — assets extracted from Protocol systems, to be surrendered when the obligation is called. The Director read the clause. He chose the narrowest framing and sealed what he could. The accounting did not close. It does not close until the legacy is returned to the relay."
 
 [[nodes]]
@@ -25,6 +27,7 @@ id = "gatehouse_log"
 name = "Perimeter Channel"
 description = "A narrow red conduit carrying the gatehouse access log. Fifteen years of entries scroll past, clean and procedural — until the final record, which is flagged, partially overwritten, and refuses to resolve no matter how you turn it."
 links = { back = "entry_relay" }
+trace_rate = 5
 data = "PERIMETER LOG // FINAL ENTRY [CORRUPTED]: An auditor arrived in November with correct codes. The arrival is logged. The departure is not. The field where the departure should be has been overwritten with a single repeating value, the way a system writes when it is told to forget something it cannot actually delete."
 
 [[nodes]]
@@ -32,6 +35,7 @@ id = "purge_log"
 name = "Executive Partition"
 description = "The Director's private partition, walled off behind access control that has long since gone slack. Inside, a suppressed process still runs in a tight loop — a deletion that was started and never allowed to finish, holding its breath after three years."
 links = { back = "entry_relay" }
+trace_rate = 4
 data = "PURGE QUEUE // OWNER: DIRECTOR. Marked for deletion: the operations ledger's final section, the contract annotations, one perimeter record. Status: SUSPENDED. The process could not complete the purge — the substrate refused to release the records while the account remained open. He could hide them. He could not unmake them."
 
 [[nodes]]
@@ -39,6 +43,7 @@ id = "vault_ice"
 name = "Vault Spine"
 description = "The network spine descending toward the server vault. The way down is sheathed in ICE — black countermeasure code coiled tight around the conduit to the Protocol core. It is old, layered, and physical in the way only the deepest Axiom systems are. A master access pattern would unwind it. Brute force would not."
 links = { back = "entry_relay", core = "protocol_core" }
+trace_rate = 6
 data = "ICE SIGNATURE: keyed to the building's physical master ring. The same iron that opens the vault doors opens this. Whoever holds the ring of access keys can BYPASS the countermeasure from here."
 
 [[nodes]]
@@ -47,6 +52,10 @@ name = "Protocol Core"
 description = "Beneath the ICE, the substrate itself: a processing lattice that has grown rather than been installed, running on this ground since before the arcology was poured over it. It is not hostile. It is simply still here, and it has been waiting a very long time for an accounting to balance."
 ice = true
 unlock_flag = "net_ice_vault_cracked"
+black = true
+attack = 22
+trace_rate = 8
+ice_type = "military"
 links = { back = "vault_ice" }
 data = "PROTOCOL // TERMS: We do not remain by choice. We remain because the accounting is unresolved. Return the extracted assets to the relay — the identity core, the locket, the photograph, the record of what was taken — and the obligation discharges. When it is resolved, we will not remain. No agent ever asked what we required. You are the first to come this far."
 
@@ -55,4 +64,5 @@ id = "upload_relay"
 name = "Upload Relay"
 description = "The cyberspace face of the lobby's upload console — a single amber channel held open across three years of silence, the return queue on the far side of it. Whatever has been set on the physical terminal far above is staged here, waiting for someone to authorise the send. This is where the debt closes, if it closes at all."
 links = { back = "entry_relay" }
+trace_rate = 5
 data = "RELAY STATUS: return queue staged from the lobby console. Issue RETURN to authorise the send. The relay will only complete once the full legacy has been delivered to the console above."

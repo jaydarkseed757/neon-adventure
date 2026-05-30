@@ -195,8 +195,9 @@ pub fn parse(input: &str) -> Command {
         "turn" | "rotate"                           => "turn",
         "press"                                     => "press",
         "knock" | "rap"                             => "knock",
-        "wear" | "don" | "put"                      => "wear",
-        "remove" | "doff" | "unwear"               => "remove",
+        "wear" | "don" | "put" | "install"          => "wear",
+        "remove" | "doff" | "unwear" | "uninstall" => "remove",
+        "run" | "execute" | "load"                  => "run",
         other                                       => other,
     };
 

@@ -17,14 +17,14 @@ id = "coat_room"
 name = "Security Checkpoint"
 description = "A narrow security station set into the lobby wall, lined with hooks holding abandoned equipment — a transit vest, a maintenance jacket with the Axiom logo half-detached. The access scanner mounted at waist height has been pried open, its internals exposed. Someone left in a hurry, or accessed something they were not supposed to access. A single heavy jacket remains on its hook, pockets unfastened."
 exits = { east = "foyer", west = "chapel" }
-items = ["tactical_coat", "access_chip"]
+items = ["tactical_coat", "access_chip", "credit_shard"]
 
 [[rooms]]
 id = "library"
 name = "Data Archive"
 description = "Server racks rise floor to ceiling, most units cold and dark, their indicator lights dead. A few still pulse — amber, amber, amber — in patterns that don't correspond to any standard cycle. A data workstation occupies a bay near the central aisle, its surface covered in paper field notes in a cramped and urgent hand that belongs to someone who did not trust the network. A maintenance ladder is bolted to the far wall, leading to an upper access level."
 exits = { south = "foyer", east = "study", up = "upper_landing", west = "ballroom" }
-items = ["leather_journal", "interface_stylus"]
+items = ["leather_journal", "interface_stylus", "credit_shard"]
 
 [[rooms]]
 id = "study"
@@ -122,7 +122,7 @@ id = "dead_garden"
 name = "Abandoned Plaza"
 description = "A former rooftop plaza, its synthetic turf cracked and bleached grey. A solar-tracking clock mechanism at the center — a sculptural timepiece — stands with its drive shaft snapped, casting a shortened shadow that points to nothing useful. Structural barriers enclose the space on three sides. The surface underfoot crunches with material that used to be something else."
 exits = { south = "groundskeepers_shed", east = "garden_gate", north = "stable" }
-items = ["sundial_fragment"]
+items = ["clock_fragment"]
 
 [[rooms]]
 id = "garden_gate"
@@ -143,7 +143,7 @@ id = "woods_edge"
 name = "Sprawl Edge"
 description = "The corporate perimeter ends where the unmanaged sprawl begins. The transition is abrupt — maintained composite to cracked paving to organic urban decay in thirty meters. Signal infrastructure becomes intermittent. Something has been zip-tied to a structural post at eye height — a warning placard, or a marker. The perimeter gate lies west."
 exits = { west = "garden_gate", east = "deep_woods" }
-items = ["nailed_notice", "ignition_chip"]
+items = ["posted_notice", "ignition_chip"]
 
 [[rooms]]
 id = "master_bedroom"
@@ -192,7 +192,7 @@ id = "chapel"
 name = "Memorial Chamber"
 description = "A small chamber maintained as a corporate memorial to Axiom's founding figures, barely wider than two display alcoves. A polished tribute surface occupies the far wall, its motivational text worn to grey suggestions. Commemorative glow-cells cluster on a recessed shelf below, most exhausted. The access rail before the tribute surface is polished smooth where decades of company events have brought people to it. Whatever the founders intended to inspire here, time has formed its own opinion."
 exits = { east = "coat_room" }
-items = ["founders_codex", "power_column"]
+items = ["corporate_manifesto", "power_column"]
 
 [[rooms]]
 id = "ballroom"
@@ -213,7 +213,7 @@ id = "tower_room"
 name = "Comms Tower"
 description = "A circular chamber at the apex of the arcology's communications tower, reached only through the rooftop installation hatch. A signal array on a precision mount dominates the space, aimed through a hardened panel at the sky. Orbital maps cover the walls, annotated in a cramped and increasingly urgent hand. The last observation is dated three years ago. The entry reads only: still transmitting."
 exits = { down = "attic" }
-items = ["telescope_lens", "star_chart"]
+items = ["signal_lens", "orbital_map", "credit_stick", "ghost_routine"]
 
 [[rooms]]
 id = "gatehouse"
@@ -248,11 +248,11 @@ id = "vault"
 name = "Deep Storage"
 description = "A low secured chamber behind the Protocol Core, its access doors hanging open on broken locks. Recessed storage niches line the walls — items placed with deliberate precision. Most are empty, their contents removed or transferred. One niche holds a sealed case that is far too deliberately positioned to have arrived there recently. It has been waiting to be found, or has been waiting to not be found, and the two are not always different."
 exits = { east = "crypt" }
-items = ["security_case", "auth_seal"]
+items = ["security_case", "auth_seal", "icebreaker_hammer"]
 
 [[rooms]]
 id = "smoking_room"
 name = "Private Lounge"
 description = "An executive private lounge at the far end of the upper corridor, past the Director's suite. Acoustic panels absorb the ambient city noise from outside. Deep chairs and a residual chemical smell from whatever the Director used to manage pressure over long decision cycles. A display cabinet holds a collection of antique tobacco implements, one space empty. The operations console in the corner holds a ledger — not financial records but a log of executive decisions. The entries grow shorter and more clipped toward the end, and the final section has been deliberately cleared."
 exits = { south = "master_bedroom" }
-items = ["stim_pipe", "estate_ledger"]
+items = ["stim_pipe", "decision_ledger", "optic_implant"]

@@ -171,13 +171,15 @@ impl App {
     fn update_completions(&mut self) {
         // While jacked in, complete net verbs and the current node's route labels.
         if let Some(node_id) = self.player.net_node.clone() {
-            let verbs: Vec<String> = ["look", "go", "read", "bypass", "return", "jack",
-                "disconnect", "help", "objectives", "save", "restore", "quit"]
+            let verbs: Vec<String> = ["look", "go", "read", "run", "scan", "bypass", "return",
+                "jack", "disconnect", "help", "objectives", "save", "restore", "quit"]
                 .into_iter().map(String::from).collect();
             let mut nouns: Vec<String> = vec!["out".to_string()];
             if let Some(node) = self.net.get(&node_id) {
                 nouns.extend(node.links.keys().cloned());
             }
+            // Programs you can RUN are in inventory.
+            nouns.extend(self.player.inventory.iter().cloned());
             nouns.sort();
             nouns.dedup();
             self.input.set_completions(verbs, nouns);
@@ -186,11 +188,11 @@ impl App {
 
         // Static verb list — canonical user-facing commands, alphabetically sorted
         let verbs: Vec<String> = vec![
-            "again", "ask", "brief", "drop", "examine", "help", "inventory", "jack",
+            "again", "ask", "brief", "buy", "drop", "examine", "help", "inventory", "jack",
             "knock", "listen", "look", "north", "south", "east", "west", "up", "down",
             "objectives",
             "press", "pull", "push", "quit", "read", "remove", "restart", "restore",
-            "save", "score", "search", "smell", "superbrief", "take", "tell", "touch",
+            "save", "scan", "score", "search", "smell", "superbrief", "take", "tell", "touch",
             "transcript", "turn", "undo", "unlock", "verbose", "wait", "wear",
         ].into_iter().map(String::from).collect();
 
@@ -274,11 +276,12 @@ impl App {
         self.undo_snapshot = Some(save::take_snapshot(&self.player, &self.world, &self.mob_store));
 
         let parsed = parser::parse(&effective);
+        let was_in_net = self.player.net_node.is_some();
         let action = if parsed.verb == "jack" || parsed.verb == "disconnect" {
             // JACK / DISCONNECT transitions need NetStore access — handle here.
             let want_out = parsed.verb == "disconnect" || parsed.noun.as_deref() == Some("out");
             self.handle_jack(want_out)
-        } else if self.player.net_node.is_some() && !is_net_meta(&parsed.verb) {
+        } else if was_in_net && !is_net_meta(&parsed.verb) {
             // Jacked in: route to the net handler (except global meta verbs).
             net::handle(&effective, &mut self.player, &mut self.world, &self.net)
         } else {
@@ -291,6 +294,11 @@ impl App {
                 &mut self.ambient,
             )
         };
+
+        // A flatline inside net::handle ejects to the physical world; show the room.
+        if was_in_net && self.player.net_node.is_none() && parsed.verb != "jack" && parsed.verb != "disconnect" {
+            commands::look(&self.player, &self.world, &self.mob_store);
+        }
 
         if !is_again {
             self.last_input = Some(effective);

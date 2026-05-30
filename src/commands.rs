@@ -170,6 +170,12 @@ pub fn handle(input: &str, player: &mut Player, world: &mut World, npcs: &NpcSto
             None       => ui::print_plain("Remove what?"),
         },
 
+        "run" => ui::print_plain("You can only run programs jacked into the net. JACK IN first."),
+
+        "scan" => scan_room(player),
+
+        "buy" => buy_item(cmd.noun.as_deref(), player, npcs),
+
         "ghost" => cmd_ghost(player, world),
 
         _ => ui::print_error(&format!("I don't understand '{}'.", input)),
@@ -177,6 +183,11 @@ pub fn handle(input: &str, player: &mut Player, world: &mut World, npcs: &NpcSto
 
     amb.tick(&player.current_room, player.turn);
     mobs.tick(&player.current_room);
+
+    // Neural integrity recovers slowly while out of the net.
+    if player.net_node.is_none() && player.integrity < 100 {
+        player.integrity = (player.integrity + 5).min(100);
+    }
 
     // Reaching a full score arms the console, but the return itself is made in
     // the net at the upload relay — not here. Nudge the player there once.
@@ -287,12 +298,32 @@ fn examine(noun: &str, player: &Player, world: &World, mobs: &MobStore) {
     };
 
     match matched {
-        Some(item) => ui::print_plain(&format!(
-            "You examine the {}. It looks significant, but offers no further secrets.",
-            item.replace('_', " ")
-        )),
+        Some(item) => match gear_description(&item) {
+            Some(desc) => ui::print_plain(desc),
+            None => ui::print_plain(&format!(
+                "You examine the {}. It looks significant, but offers no further secrets.",
+                item.replace('_', " ")
+            )),
+        },
         None => ui::print_plain(&format!("You don't see any {} here.", noun.replace('_', " "))),
     }
+}
+
+/// Flavor + usage text for cyberpunk gear (programs, cyberware, credit media).
+fn gear_description(item: &str) -> Option<&'static str> {
+    Some(match item {
+        "cyberdeck"         => "Your deck — a battered personal cyberdeck. JACK IN with it to reach the local net.",
+        "icebreaker_hammer" => "A brute-force ICEbreaker on a worn cartridge. It chews through military-class barrier ICE. RUN it against sealed ICE while jacked in.",
+        "ghost_routine"     => "A stealth program. It scatters decoy signatures across the mesh — RUN it in the net to shed accumulated trace.",
+        "repair_daemon"     => "A single-use restoration program. RUN it in the net to rebuild neural integrity. It burns out on use.",
+        "decryptor"         => "A decryption suite for locked datachips. RUN it where encrypted data is staged.",
+        "neural_dampener"   => "A subdermal feedback buffer. INSTALL (WEAR) it to halve the integrity damage black ICE deals.",
+        "trace_buffer"      => "A signal-masking implant. INSTALL it to slow how fast a trace builds while you're jacked in.",
+        "optic_implant"     => "An augmented-optics package. INSTALL it to enable SCAN — spectral sweeps of rooms and adjacent net nodes.",
+        "credit_shard"      => "A loaded credit shard. Take it to bank the credits.",
+        "credit_stick"      => "A fat credit stick. Take it to bank the credits.",
+        _ => return None,
+    })
 }
 
 /// Move the player in a direction.
@@ -387,6 +418,18 @@ fn take(noun: &str, player: &mut Player, world: &mut World) {
         }
     };
 
+    // Credit shards convert straight to credits instead of entering inventory.
+    if let Some(value) = credit_value(&item) {
+        if let Some(room) = world.get_room_mut(&player.current_room) {
+            room.items.retain(|i| i != &item);
+        }
+        player.credits += value;
+        ui::print_plain(&format!(
+            "You pocket the {} — {} credits. Balance: {}.",
+            item.replace('_', " "), value, player.credits));
+        return;
+    }
+
     if let Some(room) = world.get_room_mut(&player.current_room) {
         room.items.retain(|i| i != &item);
     }
@@ -400,7 +443,7 @@ fn take(noun: &str, player: &mut Player, world: &mut World) {
         "iron_ring"       => (4, "A heavy ring of physical access keys, most of the subsidiary keys no longer valid. A record of every locked system in this building."),
         "pocket_watch"    => (5, "The timepiece has stopped. The hands are frozen at eleven minutes past two. You wind the crown. It does not start."),
         "music_box"       => (6, "You raise the lid. The mechanism engages and releases four bars of a simple melody into the still air. Unbearably precise."),
-        "masters_will"    => (5, "The Director's seal is intact. The document inside is dense legal language — parties, assets, conditions. One clause has been annotated twice in a different hand."),
+        "directors_contract"    => (5, "The Director's seal is intact. The document inside is dense legal language — parties, assets, conditions. One clause has been annotated twice in a different hand."),
         "old_photograph"  => (4, "A formal photograph printed on archival stock. A family on the arcology's entrance steps. The timestamp on the reverse is eighteen years ago. None of them appear to have fared well."),
         _                 => (0, ""),
     };
@@ -459,13 +502,13 @@ fn drop_item(noun: &str, player: &mut Player, world: &mut World) {
                 let (pts, msg) = match item.as_str() {
                     "signet_ring"      => (12, "You set the identity core on the upload terminal. The amber indicator intensifies. Whatever authorization it carried, it is now in the return queue."),
                     "tarnished_locket" => (10, "The locket comes to rest against the terminal housing. A small encrypted life, latched and waiting. You have returned it to the network."),
-                    "masters_will"     => (12, "You place the Director's contract on the upload terminal. The seal is intact. Whatever it documents has been waiting a very long time to be processed."),
+                    "directors_contract"     => (12, "You place the Director's contract on the upload terminal. The seal is intact. Whatever it documents has been waiting a very long time to be processed."),
                     "music_box"        => (9,  "The audio player sits open near the terminal. A current in the room sets its mechanism cycling faintly, almost a signal. The system responds."),
                     "pocket_watch"     => (8,  "The stopped timepiece lies face-up in the lobby. Eleven past two. Whatever it marks, the terminal acknowledges it."),
                     "old_photograph"   => (8,  "The photograph lies face-up in the lobby's dead light. A family on the entrance steps — this very plaza. None of them are smiling."),
                     "leather_journal"  => (7,  "The field notes lie open on the lobby floor. You cannot process it all, but you have returned it. Whoever wrote it deserved at least that."),
                     "dark_bottle"      => (4,  "A sealed vial from the deepest server level, its label degraded beyond identification. The contents are still sealed. The terminal pulses once."),
-                    "sundial_fragment" => (2,  "A fragment of the old clock sculpture, its inscription worn smooth. The terminal accepts the return regardless."),
+                    "clock_fragment" => (2,  "A fragment of the old clock sculpture, its inscription worn smooth. The terminal accepts the return regardless."),
                     _                  => (0, ""),
                 };
                 if pts > 0 {
@@ -516,11 +559,11 @@ fn unlock_target(noun: &str, player: &mut Player, world: &mut World) {
                 return;
             }
             if let Some(study) = world.get_room_mut("study") {
-                if study.items.contains(&"masters_will".to_string()) {
+                if study.items.contains(&"directors_contract".to_string()) {
                     ui::print_plain("The desk is already open.");
                     return;
                 }
-                study.items.push("masters_will".to_string());
+                study.items.push("directors_contract".to_string());
             }
             player.drop_item("cipher_key"); // key stays in the lock
             let awarded = player.award("puzzle_desk", 8);
@@ -565,12 +608,13 @@ fn print_inventory(player: &Player) {
         for item in &player.inventory {
             let label = item.replace('_', " ");
             if player.worn.contains(item) {
-                ui::print_items(&format!("  - {} (worn)", label));
+                ui::print_items(&format!("  - {} (installed)", label));
             } else {
                 ui::print_items(&format!("  - {}", label));
             }
         }
     }
+    ui::print_dim(&format!("Credits: {}", player.credits));
 }
 
 /// Print the player's current score and rank, with a full achievement breakdown.
@@ -605,7 +649,7 @@ fn print_score(player: &Player) {
     ui::print_score_line(done("discover_iron_ring"),       "Find the access key ring",           "4pts");
     ui::print_score_line(done("discover_pocket_watch"),    "Find the stopped timepiece",         "5pts");
     ui::print_score_line(done("discover_music_box"),       "Find the audio player",              "6pts");
-    ui::print_score_line(done("discover_masters_will"),    "Recover the Director's contract",    "5pts");
+    ui::print_score_line(done("discover_directors_contract"),    "Recover the Director's contract",    "5pts");
     ui::print_score_line(done("discover_old_photograph"),  "Find the corrupted photograph",      "4pts");
     ui::print_blank();
 
@@ -618,13 +662,13 @@ fn print_score(player: &Player) {
     ui::print_room_header("RETURNS  (upload items to the lobby terminal)");
     ui::print_score_line(done("deposit_signet_ring"),      "Upload the identity core",           "12pts");
     ui::print_score_line(done("deposit_tarnished_locket"), "Return the tarnished locket",        "10pts");
-    ui::print_score_line(done("deposit_masters_will"),     "Upload the Director's contract",     "12pts");
+    ui::print_score_line(done("deposit_directors_contract"),     "Upload the Director's contract",     "12pts");
     ui::print_score_line(done("deposit_music_box"),        "Return the audio player",            "9pts");
     ui::print_score_line(done("deposit_pocket_watch"),     "Return the timepiece",               "8pts");
     ui::print_score_line(done("deposit_old_photograph"),   "Return the photograph",              "8pts");
     ui::print_score_line(done("deposit_leather_journal"),  "Return the field notes",             "7pts");
     ui::print_score_line(done("deposit_dark_bottle"),      "Return the sealed vial",             "4pts");
-    ui::print_score_line(done("deposit_sundial_fragment"), "Return the clock fragment",          "2pts");
+    ui::print_score_line(done("deposit_clock_fragment"), "Return the clock fragment",          "2pts");
     ui::print_blank();
 }
 
@@ -735,7 +779,7 @@ fn readable_text(item: &str) -> Option<&'static str> {
   manually. After this record, the log contains no further entries."
         ),
 
-        "estate_ledger" => Some(
+        "decision_ledger" => Some(
 "The ledger is not financial records. The columns read: Decision — Date — Status.
 
   Early entries are operational: personnel changes, maintenance work, a boundary negotiation.
@@ -754,7 +798,7 @@ fn readable_text(item: &str) -> Option<&'static str> {
     To whoever processes this record: the data return must be completed."
         ),
 
-        "masters_will" => Some(
+        "directors_contract" => Some(
 "The document is dense legal language. One clause has been annotated twice in a different hand.
 
   '...and to the entity designated herein as the Protocol substrate,
@@ -797,7 +841,7 @@ the labels have been corrupted and are not recoverable.
   identify from what remains of the schematic."
         ),
 
-        "nailed_notice" => Some(
+        "posted_notice" => Some(
 "The placard is weatherproofed and zip-tied at eye height.
 
   AXIOM INDUSTRIES — ARCOLOGY COMPLEX
@@ -811,7 +855,7 @@ the labels have been corrupted and are not recoverable.
     Don't go in. I went in."
         ),
 
-        "star_chart" => Some(
+        "orbital_map" => Some(
 "The orbital map covers the signal environment accessible from the tower's position.
 The margins are dense with observations in a cramped hand. Most are routine notations.
 
@@ -828,7 +872,7 @@ The margins are dense with observations in a cramped hand. Most are routine nota
   There are no further entries."
         ),
 
-        "founders_codex" => Some(
+        "corporate_manifesto" => Some(
 "The corporate manifesto falls open to a page worn soft with handling.
 The text is Axiom's founding philosophy, but a note has been written at the bottom:
 
@@ -898,7 +942,7 @@ fn smell_item(noun: &str, player: &Player, world: &World) {
                 "leather_journal"     => "Old synthetic leather and paper. The ink has a faint metallic edge.",
                 "dark_bottle"         => "Even through the seal, something sharp — chemical degradation, or something stranger.",
                 "tactical_coat"       => "Dense fiber, recycled air, and the thermal residue of someone's body heat. Someone wore this often.",
-                "founders_codex"      => "Composite binding and old paper. Whatever was conducted over this volume, it absorbed some of the atmosphere.",
+                "corporate_manifesto"      => "Composite binding and old paper. Whatever was conducted over this volume, it absorbed some of the atmosphere.",
                 "burnt_relay"         => "Polymer melt and oxidized metal. Whatever shorted out here, it got hot.",
                 "power_column"        => "Ozone and cold metal. The internal cell is still holding a residual charge.",
                 "signal_node"         => "Nothing you can identify. The casing has a faint warm-electronics smell, as if something inside is still cycling very slowly.",
@@ -1086,7 +1130,7 @@ fn push_pull(verb: &str, noun: &str, player: &Player) {
     };
 
     let response = match normalized.as_str() {
-        "sundial" | "sundial_fragment" =>
+        "clock" | "clock_fragment" =>
             "The clock mechanism base grinds against the composite. It won't rotate without its drive shaft, \
              and whatever it was calibrated to indicate has long since passed.",
         "door" | "iron_door" | "iron_lock" if player.current_room == "wine_cellar" =>
@@ -1154,9 +1198,12 @@ fn wear_item(noun: &str, player: &mut Player) {
                 return;
             }
             let msg = match item.as_str() {
-                "tactical_coat" => "You pull on the heavy jacket. It is dense and slightly too large, and it carries the thermal signature of someone else's occupation.",
-                "antenna_rod"   => "You tuck the antenna under one arm. It makes you feel no more in command of the situation.",
-                _             => "You put it on. It doesn't quite fit the occasion, but it's on.",
+                "tactical_coat"   => "You pull on the heavy jacket. It is dense and slightly too large, and it carries the thermal signature of someone else's occupation.",
+                "antenna_rod"     => "You tuck the antenna under one arm. It makes you feel no more in command of the situation.",
+                "optic_implant"   => "You seat the optic implant against the socket behind your eye. It boots with a pale reticle. SCAN is online.",
+                "neural_dampener" => "The dampener slots into the deck's feedback line. Black ICE will hit softer now.",
+                "trace_buffer"    => "The trace buffer comes online, smearing your signature across the mesh. Traces will build slower.",
+                _               => "You put it on. It doesn't quite fit the occasion, but it's on.",
             };
             player.worn.insert(item);
             ui::print_plain(msg);
@@ -1183,6 +1230,100 @@ fn remove_item(noun: &str, player: &mut Player) {
             ui::print_plain(&format!("You take off the {}.", item.replace('_', " ")));
         }
     }
+}
+
+// ---------------------------------------------------------------------------
+// Cyberware, programs, credits, the fixer
+// ---------------------------------------------------------------------------
+
+/// Credit value of a pickup that converts straight to credits, if any.
+fn credit_value(item: &str) -> Option<u32> {
+    match item {
+        "credit_shard" => Some(60),
+        "credit_stick" => Some(120),
+        _ => None,
+    }
+}
+
+/// The room where the fixer keeps shop.
+const FIXER_ROOM: &str = "servants_quarters";
+
+/// Fixer stock: (item id, price in credits).
+const FIXER_STOCK: &[(&str, u32)] = &[
+    ("icebreaker_hammer", 120),
+    ("ghost_routine",      80),
+    ("repair_daemon",      60),
+    ("neural_dampener",   150),
+    ("trace_buffer",      130),
+    ("optic_implant",     100),
+    ("decryptor",          90),
+];
+
+/// SCAN in the physical world (requires an optic implant).
+fn scan_room(player: &mut Player) {
+    if !player.worn.contains("optic_implant") {
+        ui::print_plain("You have no optic implant online. There is nothing to scan with.");
+        return;
+    }
+    ui::print_exits("Optic sweep — enhanced spectra wash over the room.");
+    ui::print_dim("Thermal, EM, and passive RF resolve. Nothing concealed registers here.");
+}
+
+/// BUY from the fixer. With no noun, list stock and your balance.
+fn buy_item(noun: Option<&str>, player: &mut Player, npcs: &NpcStore) {
+    // The fixer must be present.
+    let at_fixer = player.current_room == FIXER_ROOM && npcs.get(FIXER_ROOM).is_some();
+    if !at_fixer {
+        ui::print_plain("There's no one here selling anything. The fixer keeps shop elsewhere.");
+        return;
+    }
+
+    let noun = match noun {
+        None => {
+            ui::print_room_header("FIXER — STOCK");
+            for (item, price) in FIXER_STOCK {
+                let owned = player.has_item(item) || player.worn.contains(*item);
+                let tag = if owned { "  (owned)" } else { "" };
+                ui::print_plain(&format!("  {:<20} {} cr{}", item.replace('_', " "), price, tag));
+            }
+            ui::print_dim(&format!("Your balance: {} credits.  BUY <item> to purchase.", player.credits));
+            return;
+        }
+        Some(n) => n.replace(' ', "_"),
+    };
+
+    // Resolve against stock names.
+    let stock_ids: Vec<String> = FIXER_STOCK.iter().map(|(i, _)| i.to_string()).collect();
+    let item = if stock_ids.contains(&noun) {
+        noun
+    } else {
+        match parser::fuzzy_match(&noun, &stock_ids) {
+            Some(m) => m.clone(),
+            None => {
+                ui::print_plain("The fixer doesn't carry that.");
+                return;
+            }
+        }
+    };
+
+    let price = FIXER_STOCK.iter().find(|(i, _)| *i == item).map(|(_, p)| *p).unwrap_or(0);
+
+    if player.has_item(&item) || player.worn.contains(&item) {
+        ui::print_plain(&format!("You already have the {}.", item.replace('_', " ")));
+        return;
+    }
+    if player.credits < price {
+        ui::print_error(&format!(
+            "The {} runs {} credits. You have {}. The fixer waits, unbothered.",
+            item.replace('_', " "), price, player.credits));
+        return;
+    }
+
+    player.credits -= price;
+    player.take_item(item.clone());
+    ui::print_plain(&format!(
+        "The fixer slides the {} across. −{} credits. Balance: {}.",
+        item.replace('_', " "), price, player.credits));
 }
 
 // ---------------------------------------------------------------------------
@@ -1359,7 +1500,7 @@ fn print_runtime(player: &Player, world: &World, npcs: &NpcStore, mobs: &MobStor
 /// (item id, display name)
 const LEGACY_ASSETS: &[(&str, &str)] = &[
     ("signet_ring",      "the signet ring (identity core)"),
-    ("masters_will",     "the Director's contract"),
+    ("directors_contract",     "the Director's contract"),
     ("tarnished_locket", "the tarnished locket"),
     ("old_photograph",   "the old photograph"),
     ("leather_journal",  "the auditor's journal"),
@@ -1400,7 +1541,7 @@ fn print_objectives(player: &Player) {
     };
 
     // Phase 1 — the debt is understood once you have evidence of the obligation.
-    let debt_known = player.scored_events.contains("discover_masters_will")
+    let debt_known = player.scored_events.contains("discover_directors_contract")
         || player.scored_events.contains("discover_leather_journal")
         || player.scored_events.contains("discover_signet_ring")
         || player.scored_events.contains("net_debt_understood");
@@ -1478,7 +1619,10 @@ fn print_help() {
     ui::print_plain("  PRESS <thing>         — press something");
     ui::print_plain("  KNOCK [thing]         — knock on a door or surface");
     ui::print_plain("  JACK IN / JACK OUT    — connect to (or leave) the net via your cyberdeck");
-    ui::print_plain("  (in the net: GO <route>, READ, BYPASS, RETURN)");
+    ui::print_plain("  (in the net: GO <route>, READ, RUN <program>, SCAN, BYPASS, RETURN)");
+    ui::print_plain("  INSTALL <cyberware>   — install an augmentation (also WEAR)");
+    ui::print_plain("  SCAN                  — optic-implant sweep of a room or net node");
+    ui::print_plain("  BUY [item]            — list or purchase from the fixer");
     ui::print_plain("  WEAR <item>           — put something on");
     ui::print_plain("  REMOVE <item>         — take something off");
     ui::print_plain("  SAVE                  — save your progress to disk");

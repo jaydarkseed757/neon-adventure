@@ -182,22 +182,35 @@ pub fn render_status_bar(player: &Player, world: &World, fonts: &Fonts, net_labe
             (format!("  [ {} ]", room_name.to_uppercase()), TextColor::RoomHeader)
         }
     };
-    let time   = format!("  {}", ambient::time_label(player.turn));
-    let score  = format!("Score: {}  ", player.score);
-    let turn   = format!("Turn: {}  ", player.turn);
-
     let y = STATUS_H - 8.0;
 
     draw_text_ex(&label, MARGIN, y, tp(&fonts.bold, 14, label_color.to_mq_color()));
 
-    let right = w - MARGIN;
-    let tw  = mw(&time,  &fonts.regular, 14);
-    let turw = mw(&turn, &fonts.regular, 14);
-    let sw  = mw(&score, &fonts.regular, 14);
+    // Right-side readout. Segments are ordered rightmost-first (drawn leftward).
+    // Jacked in: show neural integrity + trace meters; otherwise score + turn.
+    let mut segs: Vec<(String, Color)> = Vec::new();
+    segs.push((format!("  {}", ambient::time_label(player.turn)), TextColor::Ambient.to_mq_color()));
+    if net_label.is_some() {
+        let integ = player.integrity;
+        let trace = player.trace;
+        let integ_col = if integ >= 60 { TextColor::Items }
+                        else if integ >= 30 { TextColor::ScoreNotice }
+                        else { TextColor::Error };
+        let trace_col = if trace < 50 { TextColor::Default }
+                        else if trace < 80 { TextColor::ScoreNotice }
+                        else { TextColor::Error };
+        segs.push((format!("TRACE: {}%  ", trace), trace_col.to_mq_color()));
+        segs.push((format!("INTEG: {}%  ", integ), integ_col.to_mq_color()));
+    } else {
+        segs.push((format!("Turn: {}  ", player.turn), TextColor::Default.to_mq_color()));
+        segs.push((format!("Score: {}  ", player.score), TextColor::Default.to_mq_color()));
+    }
 
-    draw_text_ex(&time,  right - tw,               y, tp(&fonts.regular, 14, TextColor::Ambient.to_mq_color()));
-    draw_text_ex(&turn,  right - tw - turw,         y, tp(&fonts.regular, 14, TextColor::Default.to_mq_color()));
-    draw_text_ex(&score, right - tw - turw - sw,    y, tp(&fonts.regular, 14, TextColor::Default.to_mq_color()));
+    let mut x = w - MARGIN;
+    for (text, color) in &segs {
+        x -= mw(text, &fonts.regular, 14);
+        draw_text_ex(text, x, y, tp(&fonts.regular, 14, *color));
+    }
 }
 
 pub fn render_output_area(rendered: &[RenderedLine], scroll: &ScrollState, fonts: &Fonts) {

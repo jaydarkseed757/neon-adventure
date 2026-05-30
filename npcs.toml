@@ -20,7 +20,7 @@ item_responses = [
         "A pause. \"They did not depart. That is recorded in the perimeter post log, if you locate it.\"",
         "It cycles a process that produces no output.",
     ]},
-    { item = "masters_will", lines = [
+    { item = "directors_contract", lines = [
         "The indicators register the document without any apparent change in processing state.",
         "\"He signed it eventually,\" it says. \"He resisted the terms for a significant period. He told himself it was appropriate caution.\"",
         "It does not elaborate. \"It was not appropriate caution.\"",
@@ -325,5 +325,32 @@ topics = [
     ]},
     { keys = ["inventory", "complete", "return", "upload", "data", "things", "belong"], lines = [
         "\"The assets should go back where they can be accessed.\" The small voice has certainty about this. \"That's all it requires. That's all it has ever required.\"",
+    ]},
+]
+
+[[npcs]]
+room_id = "servants_quarters"
+name = "The Fixer"
+aliases = ["fixer", "dealer", "vendor", "merchant", "trader"]
+unknown_topic = "\"Not my department,\" the fixer says. \"I move gear, not answers.\""
+repeat_topic = "\"Said my piece on that.\""
+lines = [
+    "Someone is already here — sitting on an overturned crate behind a folding case of hardware, perfectly at home in a building everyone else abandoned.",
+    "\"Relax. I'm not security.\" A thin smile. \"I'm the other thing. I supply the runners that come through here, and lately that's just you.\"",
+    "\"I deal ICE breakers, wetware, the odd stealth routine. Type BUY to see the rack. Credits only — I don't do favors.\"",
+]
+revisit_lines = [
+    "The fixer is still on the crate, case open. \"Back already. BUY something or let me work.\"",
+]
+topics = [
+    { keys = ["gear", "stock", "buy", "sell", "shop", "rack", "wares", "price"], lines = [
+        "\"Everything's on the rack — type BUY to read it. Hammer cracks military ICE if you don't fancy the physical key. Dampener and trace buffer keep you alive longer in the net. Optics let you SCAN.\"",
+        "\"Repair daemon patches you mid-run. Ghost routine sheds a trace. All of it priced to move.\"",
+    ]},
+    { keys = ["credits", "money", "pay", "afford", "scrip"], lines = [
+        "\"Credits are scattered all over this tomb — shards, sticks, whatever the staff couldn't take with them. Pick them up. Bring them here.\"",
+    ]},
+    { keys = ["protocol", "debt", "director", "arcology", "auditor"], lines = [
+        "\"I don't ask what's down in the core and you don't tell me. I've watched runners go deep and come back wrong. Buy the dampener before you do.\"",
     ]},
 ]

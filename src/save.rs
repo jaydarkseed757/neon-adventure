@@ -25,7 +25,15 @@ pub struct PlayerSnapshot {
     /// `Some(node_id)` if saved while jacked into the net. Absent in older saves.
     #[serde(default)]
     pub net_node: Option<String>,
+    #[serde(default = "full_integrity")]
+    pub integrity: u8,
+    #[serde(default)]
+    pub trace: u8,
+    #[serde(default)]
+    pub credits: u32,
 }
+
+fn full_integrity() -> u8 { 100 }
 
 #[derive(Serialize, Deserialize)]
 pub struct RoomSnapshot {
@@ -67,6 +75,9 @@ pub fn take_snapshot(player: &Player, world: &World, mobs: &MobStore) -> GameSna
             scored_events: player.scored_events.clone(),
             dialogue_seen: player.dialogue_seen.clone(),
             net_node:      player.net_node.clone(),
+            integrity:     player.integrity,
+            trace:         player.trace,
+            credits:       player.credits,
         },
         world: WorldSnapshot {
             rooms: world.rooms.iter().map(|(id, r)| {
@@ -94,6 +105,9 @@ pub fn restore_snapshot(snap: GameSnapshot, player: &mut Player, world: &mut Wor
     player.scored_events = snap.player.scored_events;
     player.dialogue_seen = snap.player.dialogue_seen;
     player.net_node      = snap.player.net_node;
+    player.integrity     = snap.player.integrity;
+    player.trace         = snap.player.trace;
+    player.credits       = snap.player.credits;
 
     for (id, rs) in snap.world.rooms {
         if let Some(room) = world.rooms.get_mut(&id) {
