@@ -71,6 +71,8 @@ pub fn handle(input: &str, player: &mut Player, world: &mut World, npcs: &NpcSto
 
         "score" => print_score(player),
 
+        "objectives" => print_objectives(player),
+
         "verbose" => {
             player.verbose_mode = VerboseMode::Verbose;
             ui::print_plain("VERBOSE. Room descriptions will always be shown in full.");
@@ -176,15 +178,13 @@ pub fn handle(input: &str, player: &mut Player, world: &mut World, npcs: &NpcSto
     amb.tick(&player.current_room, player.turn);
     mobs.tick(&player.current_room);
 
-    if player.score >= 100 {
+    // Reaching a full score arms the console, but the return itself is made in
+    // the net at the upload relay — not here. Nudge the player there once.
+    if player.score >= 100 && player.first_time("console_armed_nudge") {
         ui::print_blank();
-        ui::print_win("****  YOU HAVE WON  ****");
+        ui::print_score_notice("The lobby upload console flares to a steady amber. The full legacy is staged.");
+        ui::print_dim("Jack into the net and route to the upload relay to authorise the return.");
         ui::print_blank();
-        ui::print_plain("With a perfect score of 100, you have uncovered the secrets of the Axiom Arcology");
-        ui::print_plain("and returned its extracted legacy to the upload terminal in the lobby.");
-        ui::print_win("You are the Ghost in the Machine.");
-        ui::print_blank();
-        return Action::Quit;
     }
 
     Action::Continue
@@ -1355,6 +1355,103 @@ fn print_runtime(player: &Player, world: &World, npcs: &NpcStore, mobs: &MobStor
     ui::print_blank();
 }
 
+/// The arcology's extracted legacy — the assets the return is built from.
+/// (item id, display name)
+const LEGACY_ASSETS: &[(&str, &str)] = &[
+    ("signet_ring",      "the signet ring (identity core)"),
+    ("masters_will",     "the Director's contract"),
+    ("tarnished_locket", "the tarnished locket"),
+    ("old_photograph",   "the old photograph"),
+    ("leather_journal",  "the auditor's journal"),
+    ("music_box",        "the music box"),
+    ("pocket_watch",     "the stopped pocket watch"),
+];
+
+/// One-time opening briefing shown when the player enters the arcology.
+pub fn print_intro() {
+    ui::print_blank();
+    ui::print_room_header("AXIOM ARCOLOGY — RECOVERY CONTRACT");
+    ui::print_blank();
+    ui::print_plain("Three years dark. The corporate tower that called itself a city stopped");
+    ui::print_plain("answering, and the contracts that ran it never closed out. You are the");
+    ui::print_plain("runner they finally sent in — to find out what Axiom still owes, and to");
+    ui::print_plain("settle it.");
+    ui::print_blank();
+    ui::print_plain("The building was raised on borrowed ground. Something older than the");
+    ui::print_plain("arcology runs beneath it — a process the founders called the Protocol —");
+    ui::print_plain("and the lease was never free. Assets were extracted that were meant to be");
+    ui::print_plain("returned. They never were. The debt has been compounding in the dark.");
+    ui::print_blank();
+    ui::print_plain("Recover the extracted legacy and bring it to the upload console in the");
+    ui::print_plain("lobby. Your cyberdeck can JACK IN to the local net where the physical");
+    ui::print_plain("walls won't take you — and that is where the return is finally made.");
+    ui::print_blank();
+    ui::print_dim("Type OBJECTIVES to review your goals, or HELP for a list of commands.");
+    ui::print_blank();
+}
+
+fn print_objectives(player: &Player) {
+    // An asset counts as recovered if it is carried OR already returned at the console.
+    let recovered = |id: &str| -> bool {
+        player.has_item(id) || player.scored_events.contains(&format!("deposit_{}", id))
+    };
+    let returned = |id: &str| -> bool {
+        player.scored_events.contains(&format!("deposit_{}", id))
+    };
+
+    // Phase 1 — the debt is understood once you have evidence of the obligation.
+    let debt_known = player.scored_events.contains("discover_masters_will")
+        || player.scored_events.contains("discover_leather_journal")
+        || player.scored_events.contains("discover_signet_ring")
+        || player.scored_events.contains("net_debt_understood");
+
+    let recovered_count = LEGACY_ASSETS.iter().filter(|(id, _)| recovered(id)).count();
+    let returned_count  = LEGACY_ASSETS.iter().filter(|(id, _)| returned(id)).count();
+    let total           = LEGACY_ASSETS.len();
+    let legacy_done     = recovered_count == total;
+    let return_done     = player.score >= 100;
+
+    ui::print_blank();
+    ui::print_room_header("OBJECTIVES");
+
+    ui::print_score_line(debt_known, "Uncover what Axiom owes the Protocol", "");
+
+    ui::print_score_line(
+        legacy_done,
+        &format!("Recover the extracted legacy  ({}/{} found)", recovered_count, total),
+        "",
+    );
+    for (id, name) in LEGACY_ASSETS {
+        let mark = if returned(id) {
+            "      [returned] "
+        } else if recovered(id) {
+            "      [carried]  "
+        } else {
+            "      [ ]        "
+        };
+        ui::print_dim(&format!("{}{}", mark, name));
+    }
+
+    ui::print_score_line(
+        return_done,
+        &format!("Make the return at the upload console  ({}/{} returned, score {}/100)",
+            returned_count, total, player.score),
+        "",
+    );
+
+    ui::print_blank();
+    if !debt_known {
+        ui::print_dim("  Explore the arcology. Read what was left behind. Ask its residents what happened here.");
+    } else if !legacy_done {
+        ui::print_dim("  Find the extracted assets and carry them to the upload console in the lobby.");
+    } else if !return_done {
+        ui::print_dim("  Deliver the legacy to the lobby console, then JACK IN and route to the upload relay to make the return.");
+    } else {
+        ui::print_dim("  The console is armed. JACK IN, reach the upload relay, and RETURN to close the account.");
+    }
+    ui::print_blank();
+}
+
 fn print_help() {
     ui::print_blank();
     ui::print_room_header("COMMANDS");
@@ -1368,6 +1465,7 @@ fn print_help() {
     ui::print_plain("  UNLOCK <thing>        — unlock a door, chest, or mechanism");
     ui::print_plain("  INVENTORY / I         — list what you're carrying");
     ui::print_plain("  SCORE                 — show your current score and rank");
+    ui::print_plain("  OBJECTIVES / GOALS    — show your current objectives and progress");
     ui::print_plain("  VERSION               — show version and build information");
     ui::print_plain("  RUNTIME               — show world and game statistics");
     ui::print_plain("  WAIT / Z              — let time pass");
@@ -1379,6 +1477,8 @@ fn print_help() {
     ui::print_plain("  PUSH / PULL / TURN <thing> — try to move something");
     ui::print_plain("  PRESS <thing>         — press something");
     ui::print_plain("  KNOCK [thing]         — knock on a door or surface");
+    ui::print_plain("  JACK IN / JACK OUT    — connect to (or leave) the net via your cyberdeck");
+    ui::print_plain("  (in the net: GO <route>, READ, BYPASS, RETURN)");
     ui::print_plain("  WEAR <item>           — put something on");
     ui::print_plain("  REMOVE <item>         — take something off");
     ui::print_plain("  SAVE                  — save your progress to disk");

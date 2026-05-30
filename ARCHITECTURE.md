@@ -25,6 +25,7 @@ src/
 ├── world.rs       — Room graph (static structure, mutable items/exits)
 ├── mobs.rs        — Wandering entities with probabilistic AI
 ├── npcs.rs        — Static dialogue NPCs with topic + item-triggered branches
+├── net.rs         — Net node map + jacked-in command handler (cyberspace layer)
 ├── ambient.rs     — Time-of-day system and atmospheric event pools
 ├── save.rs        — Snapshot types, JSON save/load
 └── title.rs       — Splash screen with scanline effect
@@ -33,6 +34,7 @@ src/
 ├── rooms.toml     — 37 room definitions
 ├── mobs.toml      — 6 mob definitions
 ├── npcs.toml      — 5 NPC definitions with dialogue trees
+├── nodes.toml     — 7 net node definitions (the cyberspace layer)
 └── map.txt        — ASCII map for the in-game MAP command
 
 build.rs           — Embeds build date, target triple, profile, rustc version
@@ -44,9 +46,9 @@ build.rs           — Embeds build date, target triple, profile, rustc version
 
 `main.rs` runs `loop { app.frame().await; next_frame().await; }`. This is a **frame loop (~60fps)**, not a readline REPL. `App::frame()` dispatches on `AppState`:
 
-- **`Title`** — draws the splash screen (throttled to ~30fps via an 18ms sleep in `main.rs`); transitions to `Playing` on Enter/Space.
+- **`Title`** — draws the splash screen (throttled to ~30fps via an 18ms sleep in `main.rs`); transitions to `Playing` on Enter/Space. On transition it prints the one-time story briefing (`commands::print_intro`) then the opening room look.
 - **`Playing`** — the main game: feed tab-completion lists, handle input, run a command on Enter, render.
-- **`Won`** — reached when score ≥ 100; keeps rendering the final scroll.
+- **`Won`** — reached when the net return completes; keeps rendering the final scroll.
 
 A *turn* only advances when the player submits a command — most frames do nothing but redraw. Per submitted command (`App::process_command`):
 
@@ -56,12 +58,15 @@ A *turn* only advances when the player submits a command — most frames do noth
 3. Intercept UNDO        → restore snapshot, return
 4. Intercept AGAIN       → substitute last command
 5. Snapshot state (enables UNDO)
-6. commands::handle() → Action
-   └─ at end of handle(): ambient.tick(), mobs.tick(), win check (≥100)
+6. Route by mode:
+     • JACK / DISCONNECT verb → App::handle_jack (enter/leave the net)
+     • jacked in + non-meta   → net::handle()
+     • otherwise              → commands::handle()
+        └─ at end: ambient.tick(), mobs.tick(), arm-console nudge (≥100)
 7. drain ui buffer → scroll_buf
 ```
 
-`commands::handle()` returns an `Action`: `Continue`, `Quit` (win → `Won` state), `Restart` (new game), or `Exit` (terminate process; this is what the `quit` verb maps to).
+Both `commands::handle()` and `net::handle()` return an `Action`: `Continue`, `Quit` (win → `Won` state), `Restart` (new game), or `Exit` (terminate; the `quit` verb). The **win** (`Action::Quit`) now fires only from the net `RETURN` at the upload relay — reaching score 100 in the physical world merely arms the console and nudges the player to jack in.
 
 ---
 
@@ -156,13 +161,48 @@ Each frame in `Playing`, `App::update_completions()` pushes two lists into `Inpu
 - **verbs** — static canonical command list.
 - **nouns** — dynamic: items in the current room, player inventory, exit directions, and any NPC present (name + aliases).
 
-`InputState::try_complete()` completes the word at the cursor; the first word is matched against verbs, later words against nouns. Repeated Tab cycles through all matches; any other keypress resets the cycle.
+`InputState::try_complete()` completes the word at the cursor; the first word is matched against verbs, later words against nouns. Repeated Tab cycles through all matches; any other keypress resets the cycle. While jacked in, the completion lists switch to net verbs and the current node's route labels.
+
+---
+
+## The Net (`net.rs`, `nodes.toml`)
+
+A second, navigable layer reached with `JACK IN` (the player starts with a `cyberdeck`). `net.rs`
+mirrors `world.rs`: a `NetNode { id, name, description, links, ice, unlock_flag, data }` graph loaded
+from the embedded `nodes.toml` (7 nodes mapping to story beats — archive, perimeter log, executive
+purge queue, vault ICE spine, the Protocol core, and the upload relay).
+
+- **Entry/exit** is owned by `App::handle_jack` (it needs the `NetStore` plus physical world/mobs):
+  `JACK IN` requires the cyberdeck and a room with signal (`net::NO_SIGNAL_ROOMS` denies far-exterior
+  rooms); `JACK OUT`/`DISCONNECT` clears `player.net_node` and re-shows the physical room.
+- **While jacked in**, `App::process_command` routes to `net::handle()` instead of `commands::handle()`,
+  except for global meta verbs (`is_net_meta`: help/save/restore/quit/restart/objectives/score/
+  version/runtime). Net verbs: `LOOK`, `GO <route>` (or a bare route label), `READ`, `BYPASS`, `RETURN`.
+- **Gating** is flag-based and reuses `scored_events`: an `ice` node is sealed until its `unlock_flag`
+  is set. `BYPASS` at the vault spine sets `net_ice_vault_cracked` if the player holds the `iron_ring`,
+  opening the route to the Protocol core. Reading the archive sets `net_debt_understood` (advances OBJECTIVES).
+- **State**: `player.net_node: Option<String>` (the current node, or `None` in the physical world) is
+  the only new persisted field — added to `PlayerSnapshot` with `#[serde(default)]`. All other net
+  progress lives in `scored_events`, which is already saved.
+- **Visual cue**: while jacked in the status bar shows `[ NET // <node> ]` (cyan) and the input prompt
+  becomes `NET>` (a `net_label`/`in_net` flag threaded into `gfx::render_status_bar` / `render_input_bar`).
+
+## Story spine
+
+The fiction (an ancient **Protocol** owed a return of extracted assets) is surfaced two ways:
+the one-time **briefing** (`commands::print_intro`) shown on entering `Playing`, and the
+**`OBJECTIVES`** command (`commands::print_objectives`), a 3-phase checklist computed live from
+existing state — debt understood → legacy recovered (the deposit-set assets) → return made. The
+climax ties both new features together: gather to score 100 (arms the console), then `JACK IN` and
+`RETURN` at the upload relay to win.
 
 ---
 
 ## Scoring & Puzzles
 
-Win at **score ≥ 100** ("You are the Ghost in the Machine."). Awards are event-keyed (never doubled): exploration (first visit to notable rooms), discovery (picking up key items), deposits (returning items), and three unlock puzzles:
+The gather loop scores to **100** (which arms the upload console; the actual win is the net `RETURN`).
+Awards are event-keyed (never doubled): exploration (first visit to notable rooms), discovery (picking
+up key items), deposits (returning items to the lobby console), and three unlock puzzles:
 
 | Puzzle  | Room            | Key item        | Points | Effect                          |
 |---------|-----------------|-----------------|--------|---------------------------------|
@@ -190,6 +230,8 @@ Win at **score ≥ 100** ("You are the Ghost in the Machine."). Awards are event
 | TRANSCRIPT | `neon_descent_transcript.txt` | — | Plain-text dump of `scroll_buf` |
 
 Save/transcript paths are relative to the working directory (≈ `~` when launched from Finder).
+The snapshot captures `player.net_node`, so saving/restoring while jacked in preserves the net
+location; all other net progress rides along in `scored_events`.
 
 ---
 
@@ -201,7 +243,7 @@ Save/transcript paths are relative to the working directory (≈ `~` when launch
 | `image`      | PNG decode for the embedded title texture        |
 | `serde`      | Derive macros for serialization                  |
 | `serde_json` | JSON save file format                            |
-| `toml`       | Parse the embedded room/mob/NPC data             |
+| `toml`       | Parse the embedded room/mob/NPC/net-node data    |
 | `libc`       | RSS memory reporting (`runtime` command)         |
 
 ---
@@ -223,8 +265,9 @@ cargo build --release     # target/release/neon_descent
 | Metric          | Value                       |
 |-----------------|-----------------------------|
 | Rooms           | 37                          |
+| Net nodes       | 7                           |
 | Mobs            | 6                           |
 | NPCs            | 5                           |
-| Max score       | 100                         |
+| Max score       | 100 (arms the net return)   |
 | Command history | 5                           |
 | Save format     | JSON (`neon_descent.sav`)   |

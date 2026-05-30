@@ -10,6 +10,7 @@ mod save;
 mod ui;
 mod gfx;
 mod input;
+mod net;
 mod app;
 
 use macroquad::prelude::*;

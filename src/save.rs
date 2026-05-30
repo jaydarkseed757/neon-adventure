@@ -22,6 +22,9 @@ pub struct PlayerSnapshot {
     /// Absent in older save files — defaults to empty.
     #[serde(default)]
     pub dialogue_seen: HashSet<String>,
+    /// `Some(node_id)` if saved while jacked into the net. Absent in older saves.
+    #[serde(default)]
+    pub net_node: Option<String>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -63,6 +66,7 @@ pub fn take_snapshot(player: &Player, world: &World, mobs: &MobStore) -> GameSna
             turn:          player.turn,
             scored_events: player.scored_events.clone(),
             dialogue_seen: player.dialogue_seen.clone(),
+            net_node:      player.net_node.clone(),
         },
         world: WorldSnapshot {
             rooms: world.rooms.iter().map(|(id, r)| {
@@ -89,6 +93,7 @@ pub fn restore_snapshot(snap: GameSnapshot, player: &mut Player, world: &mut Wor
     player.turn          = snap.player.turn;
     player.scored_events = snap.player.scored_events;
     player.dialogue_seen = snap.player.dialogue_seen;
+    player.net_node      = snap.player.net_node;
 
     for (id, rs) in snap.world.rooms {
         if let Some(room) = world.rooms.get_mut(&id) {

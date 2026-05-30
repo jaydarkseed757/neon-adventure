@@ -22,6 +22,8 @@ pub struct Player {
     pub dialogue_seen: HashSet<String>,
     /// Controls how much is shown when entering a room.
     pub verbose_mode: VerboseMode,
+    /// `Some(node_id)` while jacked into the net; `None` in the physical world.
+    pub net_node: Option<String>,
 }
 
 impl Player {
@@ -39,6 +41,7 @@ impl Player {
             scored_events: HashSet::new(),
             dialogue_seen: HashSet::new(),
             verbose_mode: VerboseMode::Brief,
+            net_node: None,
         }
     }
 

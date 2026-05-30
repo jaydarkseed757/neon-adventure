@@ -13,6 +13,8 @@ use crate::commands::{self, Action};
 use crate::title::TitleScreen;
 use crate::input::InputState;
 use crate::gfx::{self, Fonts, RenderedLine, ScrollState};
+use crate::net::{self, NetStore};
+use crate::parser;
 use crate::ui;
 
 pub enum AppState {
@@ -34,6 +36,7 @@ pub struct App {
     pub npc_store: NpcStore,
     pub mob_store: MobStore,
     pub ambient:   Ambient,
+    pub net:       NetStore,
 
     // Persistent scroll buffer (all game output ever emitted this session)
     pub scroll_buf: Vec<crate::ui::StyledLine>,
@@ -65,6 +68,10 @@ impl App {
             eprintln!("Failed to load npcs.toml: {}", e);
             std::process::exit(1);
         });
+        let net = NetStore::load().unwrap_or_else(|e| {
+            eprintln!("Failed to load nodes.toml: {}", e);
+            std::process::exit(1);
+        });
 
         let mut title = TitleScreen::new();
         title.load().await;
@@ -80,6 +87,7 @@ impl App {
             npc_store,
             mob_store,
             ambient,
+            net,
             scroll_buf:   Vec::new(),
             rendered:     Vec::new(),
             prev_buf_len: 0,
@@ -94,9 +102,8 @@ impl App {
             AppState::Title => {
                 if self.title.update_and_render(&self.fonts.regular, &self.fonts.bold) {
                     self.state = AppState::Playing;
-                    // Emit the help hint and initial room look
-                    ui::print_dim("Type HELP for a list of commands.");
-                    ui::print_blank();
+                    // Opening briefing, then the initial room look
+                    commands::print_intro();
                     commands::look(&self.player, &self.world, &self.mob_store);
                     self.drain_to_buf();
                 }
@@ -149,18 +156,37 @@ impl App {
             self.scroll.scroll_by(-dy * gfx::LINE_H * 3.0);
         }
         self.rebuild_render_cache();
+        let net_label = self.player.net_node.as_ref()
+            .and_then(|id| self.net.get(id))
+            .map(|n| n.name.as_str());
         clear_background(gfx::BG);
-        gfx::render_status_bar(&self.player, &self.world, &self.fonts);
+        gfx::render_status_bar(&self.player, &self.world, &self.fonts, net_label);
         gfx::render_output_area(&self.rendered, &self.scroll, &self.fonts);
-        gfx::render_input_bar(&self.input, &self.fonts);
+        gfx::render_input_bar(&self.input, &self.fonts, net_label.is_some());
     }
 
     /// Rebuild the verb + noun lists for tab completion and push them to InputState.
     fn update_completions(&mut self) {
+        // While jacked in, complete net verbs and the current node's route labels.
+        if let Some(node_id) = self.player.net_node.clone() {
+            let verbs: Vec<String> = ["look", "go", "read", "bypass", "return", "jack",
+                "disconnect", "help", "objectives", "save", "restore", "quit"]
+                .into_iter().map(String::from).collect();
+            let mut nouns: Vec<String> = vec!["out".to_string()];
+            if let Some(node) = self.net.get(&node_id) {
+                nouns.extend(node.links.keys().cloned());
+            }
+            nouns.sort();
+            nouns.dedup();
+            self.input.set_completions(verbs, nouns);
+            return;
+        }
+
         // Static verb list — canonical user-facing commands, alphabetically sorted
         let verbs: Vec<String> = vec![
-            "again", "ask", "brief", "drop", "examine", "help", "inventory",
+            "again", "ask", "brief", "drop", "examine", "help", "inventory", "jack",
             "knock", "listen", "look", "north", "south", "east", "west", "up", "down",
+            "objectives",
             "press", "pull", "push", "quit", "read", "remove", "restart", "restore",
             "save", "score", "search", "smell", "superbrief", "take", "tell", "touch",
             "transcript", "turn", "undo", "unlock", "verbose", "wait", "wear",
@@ -245,14 +271,24 @@ impl App {
         // Take undo snapshot before mutating state
         self.undo_snapshot = Some(save::take_snapshot(&self.player, &self.world, &self.mob_store));
 
-        let action = commands::handle(
-            &effective,
-            &mut self.player,
-            &mut self.world,
-            &self.npc_store,
-            &mut self.mob_store,
-            &mut self.ambient,
-        );
+        let parsed = parser::parse(&effective);
+        let action = if parsed.verb == "jack" || parsed.verb == "disconnect" {
+            // JACK / DISCONNECT transitions need NetStore access — handle here.
+            let want_out = parsed.verb == "disconnect" || parsed.noun.as_deref() == Some("out");
+            self.handle_jack(want_out)
+        } else if self.player.net_node.is_some() && !is_net_meta(&parsed.verb) {
+            // Jacked in: route to the net handler (except global meta verbs).
+            net::handle(&effective, &mut self.player, &mut self.world, &self.net)
+        } else {
+            commands::handle(
+                &effective,
+                &mut self.player,
+                &mut self.world,
+                &self.npc_store,
+                &mut self.mob_store,
+                &mut self.ambient,
+            )
+        };
 
         if !is_again {
             self.last_input = Some(effective);
@@ -260,6 +296,39 @@ impl App {
 
         self.drain_to_buf();
         action
+    }
+
+    /// Enter or leave the net. Returns the resulting Action (always Continue).
+    fn handle_jack(&mut self, want_out: bool) -> Action {
+        if want_out {
+            if self.player.net_node.is_none() {
+                ui::print_plain("You aren't jacked in.");
+            } else {
+                self.player.net_node = None;
+                ui::print_dim("[ LINK SEVERED ]");
+                ui::print_plain("You withdraw from the net. The physical room resolves around you.");
+                commands::look(&self.player, &self.world, &self.mob_store);
+            }
+            return Action::Continue;
+        }
+
+        if self.player.net_node.is_some() {
+            ui::print_plain("You are already jacked in.");
+            return Action::Continue;
+        }
+        if !self.player.has_item("cyberdeck") {
+            ui::print_plain("You have no cyberdeck to jack in with.");
+            return Action::Continue;
+        }
+        if net::NO_SIGNAL_ROOMS.contains(&self.player.current_room.as_str()) {
+            ui::print_plain("The signal flattens out here, too far from the arcology's spine. There is no net to reach.");
+            return Action::Continue;
+        }
+
+        self.player.net_node = Some(net::ENTRY_NODE.to_string());
+        net::jack_in_flavor();
+        net::look(&self.net, net::ENTRY_NODE, &self.player);
+        Action::Continue
     }
 
     fn drain_to_buf(&mut self) {
@@ -285,6 +354,13 @@ impl App {
             self.scroll.on_new_content(&self.rendered);
         }
     }
+}
+
+/// Verbs that keep their normal (non-net) behaviour even while jacked in.
+fn is_net_meta(verb: &str) -> bool {
+    matches!(verb,
+        "help" | "save" | "restore" | "quit" | "restart" |
+        "objectives" | "score" | "version" | "runtime")
 }
 
 pub fn new_game() -> (World, Player, MobStore, Ambient) {

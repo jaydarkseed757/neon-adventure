@@ -167,22 +167,28 @@ pub fn wrap_new_lines(
 // Render panels
 // ---------------------------------------------------------------------------
 
-pub fn render_status_bar(player: &Player, world: &World, fonts: &Fonts) {
+pub fn render_status_bar(player: &Player, world: &World, fonts: &Fonts, net_label: Option<&str>) {
     let w = screen_width();
     draw_rectangle(0.0, 0.0, w, STATUS_H, STATUS_BG);
     draw_rectangle(0.0, STATUS_H - 1.0, w, 1.0, SEP_COLOR);
 
-    let room_name = world.rooms.get(&player.current_room)
-        .map(|r| r.name.as_str())
-        .unwrap_or("???");
-    let label = format!("  [ {} ]", room_name.to_uppercase());
+    // When jacked in, show the net node; otherwise the physical room.
+    let (label, label_color) = match net_label {
+        Some(node) => (format!("  [ NET // {} ]", node.to_uppercase()), TextColor::Exits),
+        None => {
+            let room_name = world.rooms.get(&player.current_room)
+                .map(|r| r.name.as_str())
+                .unwrap_or("???");
+            (format!("  [ {} ]", room_name.to_uppercase()), TextColor::RoomHeader)
+        }
+    };
     let time   = format!("  {}", ambient::time_label(player.turn));
     let score  = format!("Score: {}  ", player.score);
     let turn   = format!("Turn: {}  ", player.turn);
 
     let y = STATUS_H - 8.0;
 
-    draw_text_ex(&label, MARGIN, y, tp(&fonts.bold, 14, TextColor::RoomHeader.to_mq_color()));
+    draw_text_ex(&label, MARGIN, y, tp(&fonts.bold, 14, label_color.to_mq_color()));
 
     let right = w - MARGIN;
     let tw  = mw(&time,  &fonts.regular, 14);
@@ -226,7 +232,7 @@ pub fn render_output_area(rendered: &[RenderedLine], scroll: &ScrollState, fonts
     draw_rectangle(0.0, bot, w, 1.0, SEP_COLOR);
 }
 
-pub fn render_input_bar(input: &InputState, fonts: &Fonts) {
+pub fn render_input_bar(input: &InputState, fonts: &Fonts, in_net: bool) {
     let w   = screen_width();
     let top = output_bot() + 1.0;
     let h   = INPUT_H;
@@ -235,7 +241,7 @@ pub fn render_input_bar(input: &InputState, fonts: &Fonts) {
 
     let y = top + h / 2.0 + FONT_SIZE as f32 / 2.0 - 2.0;
 
-    let prompt = "> ";
+    let prompt = if in_net { "NET> " } else { "> " };
     draw_text_ex(prompt, MARGIN, y, tp(&fonts.bold, FONT_SIZE, PROMPT_COL));
     let pw = mw(prompt, &fonts.bold, FONT_SIZE);
 
