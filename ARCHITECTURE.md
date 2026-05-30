@@ -1,8 +1,8 @@
-# Dark Adventure — Architecture
+# Neon Descent — Architecture
 
 ## Overview
 
-Dark Adventure is a single-binary, single-threaded Rust text adventure set in Darkwood Manor. It uses a command-driven game loop with `rustyline` for line editing and command history. Static world data is loaded from TOML files at startup; all mutable state lives in memory and can be snapshotted for UNDO or serialized to JSON for SAVE/RESTORE.
+Neon Descent is a single-binary, single-threaded Rust text adventure set in Axiom Arcology, a decaying corporate arcology. It is a **windowed macroquad application** (GPU-rendered), not a terminal/TTY program — input is captured frame-by-frame from the OS keyboard event queue, and output is drawn to a scrollable canvas. Static world data (rooms, NPCs, mobs, map) is **embedded into the binary at compile time** via `include_str!`/`include_bytes!`. All mutable state lives in memory and can be snapshotted for UNDO or serialized to JSON for SAVE/RESTORE.
 
 ---
 
@@ -10,24 +10,68 @@ Dark Adventure is a single-binary, single-threaded Rust text adventure set in Da
 
 ```
 src/
-├── main.rs        — Entry point, game loop, UNDO/AGAIN dispatch
-├── commands.rs    — All command handlers; atmospheric/sensory text
+├── main.rs        — Entry point, window config, macroquad frame loop
+├── app.rs         — App state machine (Title/Playing/Won), frame dispatch,
+│                    UNDO / AGAIN / TRANSCRIPT, tab-completion word lists
+├── input.rs       — Frame-based keyboard handling, input buffer, history,
+│                    cursor, tab completion
+├── gfx.rs         — Rendering: status bar, output area, input bar; word-wrap
+│                    and incremental render cache
+├── ui.rs          — Styled text model (StyledLine/Segment/Style/TextColor),
+│                    thread-local output buffer, print_* helpers
+├── commands.rs    — All command handlers; puzzle logic; sensory/atmospheric text
 ├── parser.rs      — Input normalization, alias resolution, fuzzy matching
 ├── player.rs      — Player state: inventory, position, score, events
 ├── world.rs       — Room graph (static structure, mutable items/exits)
 ├── mobs.rs        — Wandering entities with probabilistic AI
-├── npcs.rs        — Static dialogue NPCs with item-triggered branches
+├── npcs.rs        — Static dialogue NPCs with topic + item-triggered branches
 ├── ambient.rs     — Time-of-day system and atmospheric event pools
 ├── save.rs        — Snapshot types, JSON save/load
-└── title.rs       — Splash screen
+└── title.rs       — Splash screen with scanline effect
 
-data/
-├── rooms.toml     — ~25 room definitions
-├── mobs.toml      — Mob definitions (cat, raven, …)
-└── npcs.toml      — NPC definitions with dialogue trees
+(project root — all embedded at build time)
+├── rooms.toml     — 37 room definitions
+├── mobs.toml      — 6 mob definitions
+├── npcs.toml      — 5 NPC definitions with dialogue trees
+└── map.txt        — ASCII map for the in-game MAP command
 
-build.rs           — Embeds build date, target triple, rustc version
+build.rs           — Embeds build date, target triple, profile, rustc version
 ```
+
+---
+
+## Game Loop
+
+`main.rs` runs `loop { app.frame().await; next_frame().await; }`. This is a **frame loop (~60fps)**, not a readline REPL. `App::frame()` dispatches on `AppState`:
+
+- **`Title`** — draws the splash screen (throttled to ~30fps via an 18ms sleep in `main.rs`); transitions to `Playing` on Enter/Space.
+- **`Playing`** — the main game: feed tab-completion lists, handle input, run a command on Enter, render.
+- **`Won`** — reached when score ≥ 100; keeps rendering the final scroll.
+
+A *turn* only advances when the player submits a command — most frames do nothing but redraw. Per submitted command (`App::process_command`):
+
+```
+1. Echo input into scroll_buf
+2. Intercept TRANSCRIPT  → dump scroll_buf to text file, return
+3. Intercept UNDO        → restore snapshot, return
+4. Intercept AGAIN       → substitute last command
+5. Snapshot state (enables UNDO)
+6. commands::handle() → Action
+   └─ at end of handle(): ambient.tick(), mobs.tick(), win check (≥100)
+7. drain ui buffer → scroll_buf
+```
+
+`commands::handle()` returns an `Action`: `Continue`, `Quit` (win → `Won` state), `Restart` (new game), or `Exit` (terminate process; this is what the `quit` verb maps to).
+
+---
+
+## Rendering (`gfx.rs`, `ui.rs`)
+
+Game logic never prints directly. It calls `ui::print_*` (e.g. `print_plain`, `print_room_header`, `print_items`, `print_error`) which push `StyledLine`s into a **thread-local buffer**. After each command `App` drains that buffer into the persistent `scroll_buf`.
+
+`gfx.rs` renders three regions every frame: a status bar (room name, time, score, turn), a scrollable output area, and an input bar with a blinking cursor. Word-wrapping is cached incrementally — `wrap_new_lines()` only re-wraps newly appended lines unless the window was resized.
+
+> **Note:** rendering must happen every frame. Skipping draw calls on "idle" frames does not work with macroquad's double buffering — the swapped-in back buffer shows blank and flickers. CPU is saved by throttling the title screen, not by skipping frames.
 
 ---
 
@@ -39,17 +83,17 @@ build.rs           — Embeds build date, target triple, rustc version
 struct Player {
     current_room: String,
     inventory: Vec<String>,
-    worn: HashSet<String>,          // subset of inventory
-    visited: HashSet<String>,       // rooms ever entered
+    worn: HashSet<String>,           // subset of inventory
+    visited: HashSet<String>,        // rooms ever entered
     score: u32,
     turn: u32,
-    scored_events: HashSet<String>, // prevents double-counting awards
+    scored_events: HashSet<String>,  // prevents double-counting awards
+    dialogue_seen: HashSet<String>,  // NPC topics already shown
+    verbose_mode: VerboseMode,       // Verbose / Brief / SuperBrief
 }
 ```
 
-Scoring is event-keyed: `player.first_time("discover_signet_ring")` returns `true` exactly once, so awards cannot be re-earned.
-
----
+Scoring is event-keyed: `player.first_time("discover_iron_ring")` returns `true` exactly once, and `player.award(event, pts)` only grants points the first time, so awards cannot be re-earned.
 
 ### `Room` / `World` (`world.rs`)
 
@@ -61,271 +105,126 @@ struct Room {
     exits: HashMap<String, String>,  // "north" → room_id
     items: Vec<String>,              // mutable
 }
-
-struct World {
-    rooms: HashMap<String, Room>,
-}
+struct World { rooms: HashMap<String, Room> }
 ```
 
-Room definitions (name, description) are effectively immutable after load. Exits and items are mutable — puzzles add exits, `take`/`drop` move items.
-
----
+Names/descriptions are immutable after load. Exits and items are mutable — puzzles add exits, `take`/`drop` move items.
 
 ### `Mob` / `MobStore` (`mobs.rs`)
 
 ```rust
 struct Mob {
-    id: String,
-    name: String,
-    current_room: String,           // mutable
-    wander_rooms: Vec<String>,      // allowed movement pool
-    move_chance: u64,               // 1-in-N per turn
-    idle_chance: u64,               // 1-in-N for idle message
-    presence: String,               // line shown in room description
+    id, name: String,
+    current_room: String,            // mutable
+    wander_rooms: Vec<String>,
+    move_chance: u64,                // 1-in-N per turn
+    idle_chance: u64,                // 1-in-N for idle message
+    presence: String,
     // enter / leave / idle message pools
 }
 ```
 
-Uses an xorshift64 RNG seeded from `SystemTime`. Movement is probabilistic; messages are picked randomly from pools.
-
----
+Uses an xorshift64 RNG seeded from `SystemTime`. `range()` and `one_in()` are guarded against `n == 0`.
 
 ### `Npc` / `NpcStore` (`npcs.rs`)
 
-```rust
-struct Npc {
-    room_id: String,
-    name: String,
-    lines: Vec<String>,             // first-visit greeting
-    revisit_lines: Vec<String>,
-    item_responses: Vec<ItemResponse>,  // item → response lines
-}
-```
-
-Keyed by `room_id` in a `HashMap` for O(1) lookup on room entry.
-
----
+NPCs are keyed by `room_id` for O(1) lookup on entry. Each has first-visit `lines`, `revisit_lines`, `item_responses`, and `topics` (for ASK/TELL). NPCs are cyberpunk-themed: *The Analyst, The Protocol, The Director's Partner, The Maintenance Tech, The Young Coder*.
 
 ### `Command` (`parser.rs`)
 
 ```rust
-struct Command {
-    verb: String,
-    noun: Option<String>,  // underscored, filler-stripped
-}
+struct Command { verb: String, noun: Option<String> }  // noun: underscored, filler-stripped
 ```
-
----
 
 ### `GameSnapshot` (`save.rs`)
 
-```rust
-pub struct GameSnapshot {
-    pub player: PlayerSnapshot,
-    pub world: WorldSnapshot,   // items & exits only (structure is static)
-    pub mobs: MobSnapshot,
-}
-```
-
-Used for both in-memory UNDO (one level) and persistent JSON (`darkwood.sav`).
+Captures only mutable state (player, room items/exits, mob locations). Room name/description are re-loaded from the embedded TOML. Used for both one-level in-memory UNDO and the JSON save file `neon_descent.sav`.
 
 ---
 
-## Systems
+## Parser & Fuzzy Matching (`parser.rs`)
 
-### Game Loop (`main.rs`)
+**Pipeline:** lowercase + tokenize → resolve verb alias (`n`→`north`, `x`/`l`→`look`, `get`→`take`, …) → strip filler words (`the`, `a`, `an`, `at`, `from`, `on`, `in`, `with`, …) → join remaining tokens with underscores → `noun`.
 
-```
-Initialize
-  └─ Load rooms.toml → World
-  └─ Load mobs.toml  → MobStore
-  └─ Load npcs.toml  → NpcStore
-  └─ Player::new() at "foyer"
-  └─ Show title → initial LOOK
-
-Per-turn (rustyline readline)
-  1. Snapshot state          ← enables UNDO
-  2. Handle UNDO             ← restore previous snapshot, skip rest
-  3. Handle AGAIN            ← replay last non-UNDO/AGAIN input string
-  4. parse() → Command
-  5. handle() → Action       ← all game logic here
-  6. ambient.tick()          ← ~25% chance: print atmospheric line
-  7. mobs.tick()             ← probabilistic movement & messages
-  8. Win check: score ≥ 100 → Quit
-```
+**`fuzzy_match()`** resolves item/direction strings in four escalating passes: exact (spaces ↔ underscores) → substring → word-level prefix (3+ chars) → Levenshtein `edit_distance()` (threshold scales with length).
 
 ---
 
-### Command Dispatch (`commands.rs`)
+## Tab Completion (`input.rs` ⇄ `app.rs`)
 
-`handle()` routes on `Command.verb`:
+Each frame in `Playing`, `App::update_completions()` pushes two lists into `InputState` via `set_completions()`:
+- **verbs** — static canonical command list.
+- **nouns** — dynamic: items in the current room, player inventory, exit directions, and any NPC present (name + aliases).
 
-| Category   | Verbs                                         |
-|------------|-----------------------------------------------|
-| Meta       | quit, restart, help, undo, again, version     |
-| Persistence| save, restore                                 |
-| Movement   | north/south/east/west/up/down, go             |
-| Inventory  | take, drop, inventory, wear, remove           |
-| Examination| look, examine, read, search, unlock           |
-| Sensory    | smell, listen, touch                          |
-| Interaction| push, pull, turn, press, knock                |
-| Info       | score, runtime                                |
-
-Every handler increments `player.turn` and returns `Action::Continue`, `::Quit`, or `::Restart`.
+`InputState::try_complete()` completes the word at the cursor; the first word is matched against verbs, later words against nouns. Repeated Tab cycles through all matches; any other keypress resets the cycle.
 
 ---
 
-### Parser & Fuzzy Matching (`parser.rs`)
+## Scoring & Puzzles
 
-**Input pipeline:**
-1. Lowercase, tokenize
-2. Resolve verb alias: `n` → `north`, `x` / `l` → `look`, `get` → `take`, etc.
-3. Strip filler words from noun tokens: `the`, `a`, `an`, `at`, `from`, `on`, `in`, `with`
-4. Join remaining tokens with underscores → `noun`
+Win at **score ≥ 100** ("You are the Ghost in the Machine."). Awards are event-keyed (never doubled): exploration (first visit to notable rooms), discovery (picking up key items), deposits (returning items), and three unlock puzzles:
 
-**Fuzzy matching** (`fuzzy_match()`) — used to resolve item/direction strings:
-1. Exact match (case-insensitive, spaces ↔ underscores)
-2. Substring match
-3. Word-level prefix match (3+ chars)
-4. Levenshtein edit distance (threshold: 1 for ≤4 chars, 2 for 5–7, 3 for 8+)
+| Puzzle  | Room            | Key item        | Points | Effect                          |
+|---------|-----------------|-----------------|--------|---------------------------------|
+| Iron door | `wine_cellar` | `iron_ring`     | 6      | Opens a sealed exit             |
+| Desk    | `study`         | `cipher_key`    | 8      | Reveals `masters_will`          |
+| Padlock | `upper_landing` | `biometric_chip`| 10     | Opens `up` exit to `attic`      |
 
 ---
 
-### Scoring & Achievement System
+## Atmospheric System (`ambient.rs`)
 
-Max score: **100 points**, never doubled (event-keyed).
+**Time of day** — 120-turn cycle, 8 periods of 15 turns: Dawn → Morning → Midday → Afternoon → Late Afternoon → Dusk → Evening → Night. `time_period(turn) = (turn + 60) % 120 / 15`. Surfaced in the status bar and LOOK flavor for rooms with exterior exposure.
 
-| Category      | Points | Trigger                            |
-|---------------|--------|------------------------------------|
-| Exploration   | 25     | First visit to notable rooms       |
-| Discovery     | 32     | Picking up key items               |
-| Puzzles       | 24     | Solving the three unlock puzzles   |
-| Deposits      | 19     | Returning items to the foyer       |
-
-**Puzzles:**
-
-| Puzzle       | Location      | Key Item       | Effect              |
-|--------------|---------------|----------------|---------------------|
-| Iron Door    | wine_cellar   | iron_ring      | Opens crypt exit    |
-| Rolltop Desk | study         | brass_key      | Reveals masters_will|
-| Padlock Door | upper_landing | portrait_key   | Opens attic exit    |
+**Ambient events** — `ambient.tick()` fires roughly 1-in-4 turns, drawing from room-specific or category message pools. Uses its own copy of the xorshift RNG (distinct seed from mobs.rs).
 
 ---
 
-### Mob AI (`mobs.rs`)
+## Save / Restore (`save.rs`)
 
-Each mob per turn:
-1. Roll 1-in-`move_chance` for movement
-2. Pick random destination from `wander_rooms` (excluding current)
-3. If entering the player's room → random `enter_message`
-4. If leaving the player's room → random `leave_message`
-5. If staying in the player's room → roll 1-in-`idle_chance` for random `idle_message`
+| Mechanism  | Storage              | Depth  | How                              |
+|------------|----------------------|--------|----------------------------------|
+| UNDO       | In-memory            | 1 step | Snapshot before every command    |
+| SAVE       | `neon_descent.sav`   | Full   | `serde_json` pretty JSON         |
+| RESTORE    | `neon_descent.sav`   | Full   | Deserialize + `look()` refresh   |
+| TRANSCRIPT | `neon_descent_transcript.txt` | — | Plain-text dump of `scroll_buf` |
 
----
-
-### NPC Dialogue (`npcs.rs`, triggered from `commands.rs`)
-
-On room entry:
-1. **First visit** → print `npc.lines`
-2. **Revisit, player holds trigger item** → print `item_response.lines` (once per item)
-3. **Revisit, no trigger item** → print `revisit_lines` (once)
-
-Keyed by `"npc_item_{room}_{item}"` and `"npc_revisit_{room}"` in `player.scored_events`.
-
----
-
-### Atmospheric System (`ambient.rs`)
-
-**Time of day** — 120-turn cycle, 8 periods:
-
-```
-Dawn → Morning → Midday → Afternoon → Late Afternoon → Dusk → Evening → Night
-```
-
-Affects flavor text shown with LOOK in outdoor and windowed rooms. Underground/sealed rooms have no time flavor.
-
-**Ambient events** — ~25% chance per turn:
-- Room-specific message pools for named locations
-- Category fallback pools: outdoor, underground, upper floors
-
-**Sensory commands** — hardcoded per location/item: `smell`, `listen`, `touch`.
-
----
-
-### Save / Restore (`save.rs`)
-
-| Mechanism | Storage       | Depth  | How                              |
-|-----------|---------------|--------|----------------------------------|
-| UNDO      | In-memory     | 1 step | Snapshot before every command    |
-| SAVE      | `darkwood.sav`| Full   | `serde_json::to_string_pretty()` |
-| RESTORE   | `darkwood.sav`| Full   | Deserialize + `look()` refresh   |
-
-Only mutable state is saved: player fields, room items/exits, mob locations. Room definitions (name, description) are re-loaded from TOML on startup.
-
----
-
-## Module Interaction Diagram
-
-```
-main()
- ├─ World::load()  ──►  rooms.toml
- ├─ MobStore::load() ─► mobs.toml
- ├─ NpcStore::load() ─► npcs.toml
- └─ game loop
-      │
-      ├─ parser::parse()
-      │    └─ parser::fuzzy_match() / edit_distance()
-      │
-      ├─ commands::handle()
-      │    ├─ world  (read exits, get/set items)
-      │    ├─ player (move, award, inventory)
-      │    ├─ mobs   (query presence)
-      │    ├─ npcs   (query on room entry)
-      │    └─ save   (snapshot / file I/O)
-      │
-      ├─ ambient::tick()
-      │    └─ ambient::ambient_pool() → colored output
-      │
-      └─ mobs::tick()
-           └─ probabilistic movement + messages
-```
+Save/transcript paths are relative to the working directory (≈ `~` when launched from Finder).
 
 ---
 
 ## Dependencies
 
-| Crate        | Purpose                                       |
-|--------------|-----------------------------------------------|
-| `serde`      | Derive macros for serialization               |
-| `serde_json` | JSON save file format                         |
-| `toml`       | Static game data (rooms, mobs, NPCs)          |
-| `colored`    | ANSI terminal color output                    |
-| `rustyline`  | Readline-style input with 5-entry history     |
-| `libc`       | RSS memory reporting (`runtime` command)      |
+| Crate        | Purpose                                          |
+|--------------|--------------------------------------------------|
+| `macroquad`  | Windowing, GPU rendering, input, fonts           |
+| `image`      | PNG decode for the embedded title texture        |
+| `serde`      | Derive macros for serialization                  |
+| `serde_json` | JSON save file format                            |
+| `toml`       | Parse the embedded room/mob/NPC data             |
+| `libc`       | RSS memory reporting (`runtime` command)         |
 
 ---
 
-## Error Handling
+## Build
 
-| Scenario              | Behavior                                      |
-|-----------------------|-----------------------------------------------|
-| TOML parse failure    | `eprintln` + `exit(1)` at startup             |
-| Invalid direction     | "You can't go that way."                      |
-| Item not found        | Fuzzy match fails → "You don't see that here."|
-| Missing save file     | Error printed; game continues                 |
-| Corrupt save file     | JSON error printed; game continues            |
-| Ctrl-C / Ctrl-D       | Clean exit via rustyline `Interrupted`/`Eof`  |
+```bash
+cargo run                 # debug
+cargo build --release     # target/release/neon_descent
+./package_mac.sh          # "Neon Descent.app" bundle (strips quarantine)
+```
+
+`build.rs` injects `BUILD_DATE`, `BUILD_TARGET`, `BUILD_PROFILE`, `BUILD_RUSTC` env vars, shown by the in-game `VERSION` command.
 
 ---
 
 ## Scale
 
-| Metric          | Value             |
-|-----------------|-------------------|
-| Rooms           | ~25               |
-| Items           | ~35               |
-| Mobs            | 2–3               |
-| NPCs            | 4–5               |
-| Max score       | 100               |
-| Command history | 5 (rustyline)     |
-| Save format     | JSON (`darkwood.sav`) |
+| Metric          | Value                       |
+|-----------------|-----------------------------|
+| Rooms           | 37                          |
+| Mobs            | 6                           |
+| NPCs            | 5                           |
+| Max score       | 100                         |
+| Command history | 5                           |
+| Save format     | JSON (`neon_descent.sav`)   |

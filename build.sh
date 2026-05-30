@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -e
 
-BINARY="dark_adventure"
+BINARY="neon_descent"
 DIST="dist"
 
 echo "Building $BINARY..."
