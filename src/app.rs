@@ -160,8 +160,10 @@ impl App {
             .and_then(|id| self.net.get(id))
             .map(|n| n.name.as_str());
         clear_background(gfx::BG);
-        gfx::render_status_bar(&self.player, &self.world, &self.fonts, net_label);
+        // Draw the scrolling output first, then the opaque status and input
+        // bars over it so the top/bottom partial lines are clipped cleanly.
         gfx::render_output_area(&self.rendered, &self.scroll, &self.fonts);
+        gfx::render_status_bar(&self.player, &self.world, &self.fonts, net_label);
         gfx::render_input_bar(&self.input, &self.fonts, net_label.is_some());
     }
 
