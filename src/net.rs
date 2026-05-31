@@ -5,6 +5,7 @@ use crate::ui;
 use crate::parser;
 use crate::player::Player;
 use crate::world::World;
+use crate::net_daemons::DaemonStore;
 use crate::commands::Action;
 
 // ---------------------------------------------------------------------------
@@ -104,7 +105,7 @@ pub fn look(net: &NetStore, node_id: &str, _player: &Player) {
 
 /// Dispatch a command issued while jacked into the net. JACK / DISCONNECT
 /// transitions are handled upstream in app.rs; this never sees them.
-pub fn handle(input: &str, player: &mut Player, _world: &mut World, net: &NetStore) -> Action {
+pub fn handle(input: &str, player: &mut Player, _world: &mut World, net: &NetStore, daemons: &mut DaemonStore) -> Action {
     player.turn += 1;
     let cmd = parser::parse(input);
     let node_id = match player.net_node.clone() {
@@ -116,7 +117,7 @@ pub fn handle(input: &str, player: &mut Player, _world: &mut World, net: &NetSto
         "look" => look(net, &node_id, player),
 
         "go" => match cmd.noun.as_deref() {
-            Some(label) => net_move(label, player, net),
+            Some(label) => net_move(label, player, net, daemons),
             None => ui::print_plain("Go where? Name a route."),
         },
 
@@ -129,13 +130,13 @@ pub fn handle(input: &str, player: &mut Player, _world: &mut World, net: &NetSto
             None => ui::print_plain("Run what? Name a program you're carrying."),
         },
 
-        "scan" => net_scan(player, net),
+        "scan" => net_scan(player, net, daemons),
 
         "return" | "upload" | "send" => return net_return(player),
 
         // A bare route label typed as a verb, e.g. "archive" or "core".
         other if net.get(&node_id).map_or(false, |n| n.links.contains_key(other)) => {
-            net_move(other, player, net)
+            net_move(other, player, net, daemons)
         }
 
         _ => ui::print_plain(
@@ -146,26 +147,40 @@ pub fn handle(input: &str, player: &mut Player, _world: &mut World, net: &NetSto
     // Black ICE during this turn may have zeroed integrity.
     if player.integrity == 0 {
         flatline(player);
+        daemons.reset_aggro();
         return Action::Continue;
     }
 
-    // Trace accrues each turn based on the (possibly new) current node.
+    // Daemons act, then trace accrues based on the (possibly new) current node.
     if let Some(cur) = player.net_node.clone() {
+        // The hunter-killer (if active) homes onto you; other daemons wander.
+        daemons.hunter_pursue(&cur);
+        daemons.tick(&cur);
+
         let mut rate = net.get(&cur).map(|n| n.trace_rate).unwrap_or(4);
-        // A trace buffer implant masks part of your signal.
         if player.worn.contains("trace_buffer") {
             rate = rate.saturating_sub(2).max(1);
         }
+        let spike = daemons.total_spike_at(&cur);
+        if spike > 0 {
+            ui::print_error(&format!("Hostile daemons flood your channel — trace +{} this turn.", spike));
+        }
+        let add = rate.saturating_add(spike);
+
         let before = player.trace;
-        player.trace = before.saturating_add(rate).min(100);
+        player.trace = before.saturating_add(add).min(100);
         if before < 50 && player.trace >= 50 {
             ui::print_ambient("A trace is tightening on your signal. Something is following it back toward you.");
         }
         if before < 80 && player.trace >= 80 {
-            ui::print_error("TRACE CRITICAL — a hunter-killer has your scent. Finish here or get out.");
+            ui::print_error("TRACE CRITICAL — a hunter-killer is dispatched. Shake it or get out.");
+            if player.first_time("hunter_active") {
+                daemons.activate_hunter(&cur);
+            }
         }
         if player.trace >= 100 {
             flatline(player);
+            daemons.reset_aggro();
         }
     }
 
@@ -189,6 +204,8 @@ fn flatline(player: &mut Player) {
     player.turn      = player.turn.saturating_add(3);
     // Dropping below 100 re-arms the console nudge if the player climbs back.
     player.scored_events.remove("console_armed_nudge");
+    // Let the hunter-killer re-arm on a future run.
+    player.scored_events.remove("hunter_active");
 
     if lost > 0 {
         ui::print_dim(&format!("Neural integrity rebooted to 20%. Trace cleared. The dump cost you {} points.", lost));
@@ -197,7 +214,7 @@ fn flatline(player: &mut Player) {
     }
 }
 
-fn net_move(label: &str, player: &mut Player, net: &NetStore) {
+fn net_move(label: &str, player: &mut Player, net: &NetStore, daemons: &DaemonStore) {
     let cur = match player.net_node.clone() { Some(c) => c, None => return };
     let node = match net.get(&cur) { Some(n) => n, None => return };
 
@@ -218,6 +235,13 @@ fn net_move(label: &str, player: &mut Player, net: &NetStore) {
                 return;
             }
         }
+    }
+
+    // A hostile daemon contests your exit — pushing past it costs extra trace
+    // (friction, never a hard wall), except when retreating along the back route.
+    if label != "back" && daemons.hostile_at(&cur) {
+        player.trace = player.trace.saturating_add(6).min(100);
+        ui::print_error("You force your signal past the daemon on the way out — trace +6.");
     }
 
     player.net_node = Some(target_id.clone());
@@ -368,8 +392,8 @@ fn run_icebreaker(prog: &str, breaks: &str, player: &mut Player, net: &NetStore)
     }
 }
 
-/// SCAN: optic-implant sweep. In the net, reveal adjacent ICE classes.
-fn net_scan(player: &mut Player, net: &NetStore) {
+/// SCAN: optic-implant sweep. In the net, reveal adjacent ICE classes + daemons.
+fn net_scan(player: &mut Player, net: &NetStore, daemons: &DaemonStore) {
     if !player.worn.contains("optic_implant") {
         ui::print_plain("You have no optic implant online. There is nothing to scan with.");
         return;
@@ -377,7 +401,15 @@ fn net_scan(player: &mut Player, net: &NetStore) {
     let cur = match player.net_node.clone() { Some(c) => c, None => return };
     let node = match net.get(&cur) { Some(n) => n, None => return };
 
-    ui::print_exits("Optic sweep — signal analysis of adjacent nodes:");
+    // Hostile daemons sharing this node.
+    let here = daemons.names_at(&cur);
+    if here.is_empty() {
+        ui::print_dim("Optic sweep — no hostile processes share this node.");
+    } else {
+        ui::print_error(&format!("Optic sweep — hostile here: {}.", here.join(", ")));
+    }
+
+    ui::print_exits("Adjacent nodes:");
     let mut any_ice = false;
     let mut labels: Vec<(&String, &String)> = node.links.iter().collect();
     labels.sort_by(|a, b| a.0.cmp(b.0));

@@ -3,6 +3,7 @@ use serde::{Serialize, Deserialize};
 use crate::player::Player;
 use crate::world::World;
 use crate::mobs::MobStore;
+use crate::net_daemons::DaemonStore;
 
 const SAVE_FILE: &str = "neon_descent.sav";
 
@@ -52,18 +53,26 @@ pub struct MobSnapshot {
     pub mob_rooms: Vec<(String, String)>,
 }
 
+#[derive(Serialize, Deserialize, Default)]
+pub struct DaemonSnapshot {
+    /// (daemon_id, current_node) pairs ("" = dormant)
+    pub daemon_nodes: Vec<(String, String)>,
+}
+
 #[derive(Serialize, Deserialize)]
 pub struct GameSnapshot {
     pub player: PlayerSnapshot,
     pub world: WorldSnapshot,
     pub mobs: MobSnapshot,
+    #[serde(default)]
+    pub daemons: DaemonSnapshot,
 }
 
 // ---------------------------------------------------------------------------
 // Capture / restore helpers
 // ---------------------------------------------------------------------------
 
-pub fn take_snapshot(player: &Player, world: &World, mobs: &MobStore) -> GameSnapshot {
+pub fn take_snapshot(player: &Player, world: &World, mobs: &MobStore, daemons: &DaemonStore) -> GameSnapshot {
     GameSnapshot {
         player: PlayerSnapshot {
             current_room:  player.current_room.clone(),
@@ -92,10 +101,15 @@ pub fn take_snapshot(player: &Player, world: &World, mobs: &MobStore) -> GameSna
                 .map(|m| (m.id.clone(), m.current_room.clone()))
                 .collect(),
         },
+        daemons: DaemonSnapshot {
+            daemon_nodes: daemons.daemons.iter()
+                .map(|d| (d.id.clone(), d.current_node.clone()))
+                .collect(),
+        },
     }
 }
 
-pub fn restore_snapshot(snap: GameSnapshot, player: &mut Player, world: &mut World, mobs: &mut MobStore) {
+pub fn restore_snapshot(snap: GameSnapshot, player: &mut Player, world: &mut World, mobs: &mut MobStore, daemons: &mut DaemonStore) {
     player.current_room  = snap.player.current_room;
     player.inventory     = snap.player.inventory;
     player.worn          = snap.player.worn;
@@ -119,6 +133,12 @@ pub fn restore_snapshot(snap: GameSnapshot, player: &mut Player, world: &mut Wor
     for (mob_id, room) in snap.mobs.mob_rooms {
         if let Some(mob) = mobs.mobs.iter_mut().find(|m| m.id == mob_id) {
             mob.current_room = room;
+        }
+    }
+
+    for (daemon_id, node) in snap.daemons.daemon_nodes {
+        if let Some(d) = daemons.daemons.iter_mut().find(|d| d.id == daemon_id) {
+            d.current_node = node;
         }
     }
 }

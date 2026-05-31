@@ -11,6 +11,7 @@ mod ui;
 mod gfx;
 mod input;
 mod net;
+mod net_daemons;
 mod app;
 
 use macroquad::prelude::*;

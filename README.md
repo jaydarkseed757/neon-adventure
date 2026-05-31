@@ -72,6 +72,7 @@ neon-adventure/
 ├── npcs.toml           # NPC dialogue
 ├── mobs.toml           # wandering mob definitions
 ├── nodes.toml          # net node map (cyberspace layer)
+├── daemons.toml        # net daemon definitions
 ├── map.txt             # ASCII room + net node map
 └── src/
     ├── main.rs         # entry point and game loop
@@ -84,6 +85,7 @@ neon-adventure/
     ├── npcs.rs         # loads npcs.toml
     ├── mobs.rs         # loads mobs.toml, wandering mob logic
     ├── net.rs          # loads nodes.toml; net (jacked-in) command handler
+    ├── net_daemons.rs  # loads daemons.toml; net daemon AI (trace pressure)
     ├── ambient.rs      # atmospheric ambient messages
     ├── player.rs       # player state: position, inventory, score, net_node
     ├── parser.rs       # tokenizes input into verb + noun

@@ -4,7 +4,6 @@ use crate::world::World;
 use crate::npcs::NpcStore;
 use crate::mobs::MobStore;
 use crate::ambient::{self, Ambient};
-use crate::save;
 use crate::ui;
 
 /// What the main loop should do after a command completes.
@@ -39,24 +38,7 @@ pub fn handle(input: &str, player: &mut Player, world: &mut World, npcs: &NpcSto
     match cmd.verb.as_str() {
         "quit" => return Action::Exit,
 
-        "save" => {
-            let snap = save::take_snapshot(player, world, mobs);
-            match save::save_to_file(&snap) {
-                Ok(()) => ui::print_plain("Game saved."),
-                Err(e) => ui::print_error(&format!("Save failed: {}", e)),
-            }
-        }
-
-        "restore" => {
-            match save::load_from_file() {
-                Ok(snap) => {
-                    save::restore_snapshot(snap, player, world, mobs);
-                    ui::print_plain("Game restored.");
-                    look(player, world, mobs);
-                }
-                Err(e) => ui::print_error(&format!("Restore failed: {}", e)),
-            }
-        }
+        // SAVE / RESTORE are intercepted in app.rs (they need daemon state).
 
         "restart" => return Action::Restart,
 
@@ -617,16 +599,21 @@ fn print_inventory(player: &Player) {
     ui::print_dim(&format!("Credits: {}", player.credits));
 }
 
-/// Print the player's current score and rank, with a full achievement breakdown.
-fn print_score(player: &Player) {
-    let rank = match player.score {
+/// Rank title for a given score.
+fn rank_for(score: u32) -> &'static str {
+    match score {
         0..=9   => "Trespasser",
         10..=29 => "Ghost",
         30..=59 => "Netrunner",
         60..=84 => "Data Courier",
         85..=99 => "Protocol Witness",
         _       => "Ghost in the Machine",
-    };
+    }
+}
+
+/// Print the player's current score and rank, with a full achievement breakdown.
+fn print_score(player: &Player) {
+    let rank = rank_for(player.score);
 
     let done = |key: &str| player.scored_events.contains(key);
 
@@ -1620,6 +1607,7 @@ fn print_help() {
     ui::print_plain("  KNOCK [thing]         — knock on a door or surface");
     ui::print_plain("  JACK IN / JACK OUT    — connect to (or leave) the net via your cyberdeck");
     ui::print_plain("  (in the net: GO <route>, READ, RUN <program>, SCAN, BYPASS, RETURN)");
+    ui::print_plain("  (watch your TRACE — daemons patrol the net and drive it up; RUN ghost_routine or JACK OUT)");
     ui::print_plain("  INSTALL <cyberware>   — install an augmentation (also WEAR)");
     ui::print_plain("  SCAN                  — optic-implant sweep of a room or net node");
     ui::print_plain("  BUY [item]            — list or purchase from the fixer");

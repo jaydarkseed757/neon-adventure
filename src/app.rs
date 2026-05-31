@@ -14,6 +14,7 @@ use crate::title::TitleScreen;
 use crate::input::InputState;
 use crate::gfx::{self, Fonts, RenderedLine, ScrollState};
 use crate::net::{self, NetStore};
+use crate::net_daemons::DaemonStore;
 use crate::parser;
 use crate::ui;
 
@@ -37,6 +38,7 @@ pub struct App {
     pub mob_store: MobStore,
     pub ambient:   Ambient,
     pub net:       NetStore,
+    pub daemons:   DaemonStore,
 
     // Persistent scroll buffer (all game output ever emitted this session)
     pub scroll_buf: Vec<crate::ui::StyledLine>,
@@ -72,6 +74,10 @@ impl App {
             eprintln!("Failed to load nodes.toml: {}", e);
             std::process::exit(1);
         });
+        let daemons = DaemonStore::load().unwrap_or_else(|e| {
+            eprintln!("Failed to load daemons.toml: {}", e);
+            std::process::exit(1);
+        });
 
         let mut title = TitleScreen::new();
         title.load().await;
@@ -88,6 +94,7 @@ impl App {
             mob_store,
             ambient,
             net,
+            daemons,
             scroll_buf:   Vec::new(),
             rendered:     Vec::new(),
             prev_buf_len: 0,
@@ -248,10 +255,37 @@ impl App {
             match self.undo_snapshot.take() {
                 None => ui::print_plain("Nothing to undo."),
                 Some(snap) => {
-                    save::restore_snapshot(snap, &mut self.player, &mut self.world, &mut self.mob_store);
+                    save::restore_snapshot(snap, &mut self.player, &mut self.world, &mut self.mob_store, &mut self.daemons);
                     ui::print_plain("[Undone.]");
                     commands::look(&self.player, &self.world, &self.mob_store);
                 }
+            }
+            self.drain_to_buf();
+            return Action::Continue;
+        }
+
+        // SAVE / RESTORE — handled here so the snapshot includes daemon state.
+        if input == "save" {
+            let snap = save::take_snapshot(&self.player, &self.world, &self.mob_store, &self.daemons);
+            match save::save_to_file(&snap) {
+                Ok(()) => ui::print_plain("Game saved."),
+                Err(e) => ui::print_error(&format!("Save failed: {}", e)),
+            }
+            self.drain_to_buf();
+            return Action::Continue;
+        }
+        if input == "restore" {
+            match save::load_from_file() {
+                Ok(snap) => {
+                    save::restore_snapshot(snap, &mut self.player, &mut self.world, &mut self.mob_store, &mut self.daemons);
+                    ui::print_plain("Game restored.");
+                    if self.player.net_node.is_some() {
+                        ui::print_dim("[ link re-established ]");
+                    } else {
+                        commands::look(&self.player, &self.world, &self.mob_store);
+                    }
+                }
+                Err(e) => ui::print_error(&format!("Restore failed: {}", e)),
             }
             self.drain_to_buf();
             return Action::Continue;
@@ -273,7 +307,7 @@ impl App {
         };
 
         // Take undo snapshot before mutating state
-        self.undo_snapshot = Some(save::take_snapshot(&self.player, &self.world, &self.mob_store));
+        self.undo_snapshot = Some(save::take_snapshot(&self.player, &self.world, &self.mob_store, &self.daemons));
 
         let parsed = parser::parse(&effective);
         let was_in_net = self.player.net_node.is_some();
@@ -283,7 +317,7 @@ impl App {
             self.handle_jack(want_out)
         } else if was_in_net && !is_net_meta(&parsed.verb) {
             // Jacked in: route to the net handler (except global meta verbs).
-            net::handle(&effective, &mut self.player, &mut self.world, &self.net)
+            net::handle(&effective, &mut self.player, &mut self.world, &self.net, &mut self.daemons)
         } else {
             commands::handle(
                 &effective,
@@ -315,8 +349,11 @@ impl App {
                 ui::print_plain("You aren't jacked in.");
             } else {
                 self.player.net_node = None;
+                self.player.trace = 0;
+                self.player.scored_events.remove("hunter_active");
+                self.daemons.reset_aggro();
                 ui::print_dim("[ LINK SEVERED ]");
-                ui::print_plain("You withdraw from the net. The physical room resolves around you.");
+                ui::print_plain("You withdraw from the net. Trace dissolves. The physical room resolves around you.");
                 commands::look(&self.player, &self.world, &self.mob_store);
             }
             return Action::Continue;

@@ -1,0 +1,87 @@
+# ---------------------------------------------------------------------------
+# Net daemons — node-side entities that patrol cyberspace.
+# Mirrors mobs.toml but keyed on net node ids. Hostile daemons spike your
+# trace while they share your node (pressure only — they never touch
+# integrity). The hunter_killer starts dormant (current_node = "") and is
+# activated when your trace crosses 80.
+# ---------------------------------------------------------------------------
+
+[[daemons]]
+id = "watchdog"
+name = "a watchdog process"
+current_node = "archive_node"
+wander_nodes = ["entry_relay", "archive_node", "gatehouse_log", "purge_log"]
+move_chance = 3
+hostile = true
+trace_spike = 6
+enter_messages = [
+    "A watchdog process slides in along the conduit — a blunt grey construct that turns to face your signature.",
+    "Something arrives: a watchdog, indexing every packet that carries your mark.",
+]
+leave_messages = [
+    "The watchdog loses interest and drifts off down an adjacent route.",
+    "The watchdog peels away, hunting some other anomaly.",
+]
+idle_messages = [
+    "The watchdog circles your signal, logging. Your trace climbs faster with it here.",
+    "The watchdog tightens its sampling interval. You can feel the trace building.",
+]
+
+[[daemons]]
+id = "sentinel"
+name = "a sentinel daemon"
+current_node = "vault_ice"
+wander_nodes = ["entry_relay", "vault_ice", "protocol_core", "upload_relay"]
+move_chance = 4
+hostile = true
+trace_spike = 8
+enter_messages = [
+    "A sentinel daemon unfolds across the node — older code, military-grade, and very interested in you.",
+    "A sentinel arrives, its attention falling on your signature like a weight.",
+]
+leave_messages = [
+    "The sentinel withdraws into the deeper architecture.",
+    "The sentinel disengages and sinks back toward the spine.",
+]
+idle_messages = [
+    "The sentinel floods your channel with probes. Trace is climbing hard.",
+    "The sentinel holds station on your signal, methodical and patient.",
+]
+
+[[daemons]]
+id = "hunter_killer"
+name = "a hunter-killer"
+current_node = ""
+wander_nodes = ["entry_relay", "archive_node", "gatehouse_log", "purge_log", "vault_ice", "protocol_core", "upload_relay"]
+move_chance = 1
+hostile = true
+trace_spike = 12
+enter_messages = [
+    "The hunter-killer drops onto your node out of nowhere — fast, lean, built for exactly one thing.",
+    "It finds you. The hunter-killer resolves on your signal and locks on.",
+]
+leave_messages = [
+    "You break line-of-sight and the hunter-killer loses you — for a moment.",
+]
+idle_messages = [
+    "The hunter-killer rides your signature, dumping trace into your channel. Shake it or get out.",
+    "The hunter-killer matches you move for move. Your trace is screaming.",
+]
+
+[[daemons]]
+id = "data_wisp"
+name = "a data wisp"
+current_node = "gatehouse_log"
+wander_nodes = ["entry_relay", "archive_node", "gatehouse_log", "purge_log", "upload_relay"]
+move_chance = 2
+hostile = false
+trace_spike = 0
+enter_messages = [
+    "A data wisp drifts through — a harmless tangle of orphaned packets, looping forever.",
+]
+leave_messages = [
+    "The data wisp wanders off, still looking for a process that closed years ago.",
+]
+idle_messages = [
+    "A data wisp hangs in the node, replaying a fragment of something that no longer exists.",
+]

@@ -26,6 +26,7 @@ src/
 ├── mobs.rs        — Wandering entities with probabilistic AI
 ├── npcs.rs        — Static dialogue NPCs with topic + item-triggered branches
 ├── net.rs         — Net node map + jacked-in command handler (cyberspace layer)
+├── net_daemons.rs — Node-side daemon AI (mirrors mobs.rs; pressure-only trace threat)
 ├── ambient.rs     — Time-of-day system and atmospheric event pools
 ├── save.rs        — Snapshot types, JSON save/load
 └── title.rs       — Splash screen with scanline effect
@@ -35,6 +36,7 @@ src/
 ├── mobs.toml      — 6 mob definitions
 ├── npcs.toml      — 5 NPC definitions with dialogue trees
 ├── nodes.toml     — 7 net node definitions (the cyberspace layer)
+├── daemons.toml   — net daemon definitions (watchdog, sentinel, hunter-killer, wisp)
 └── map.txt        — ASCII room + net node map (shown by the MAP cheat)
 
 build.rs           — Embeds build date, target triple, profile, rustc version
@@ -186,6 +188,14 @@ purge queue, vault ICE spine, the Protocol core, and the upload relay).
   progress lives in `scored_events`, which is already saved.
 - **Visual cue**: while jacked in the status bar shows `[ NET // <node> ]` (cyan) and the input prompt
   becomes `NET>` (a `net_label`/`in_net` flag threaded into `gfx::render_status_bar` / `render_input_bar`).
+- **Daemons** (`net_daemons.rs`, `daemons.toml`) mirror the `mobs.rs` AI loop but key on net nodes.
+  They are **pressure-only**: a hostile daemon sharing your node adds a per-turn trace spike (never
+  touches integrity), and forcing past one costs extra trace — friction, never a hard wall, so the core
+  route can't soft-lock. The `trace ≥ 80` crossing in `net::handle` calls `DaemonStore::activate_hunter`,
+  dropping a dormant **hunter-killer** onto your node that `hunter_pursue`s you each turn until you
+  `RUN ghost_routine` (drop trace) or `JACK OUT` (`reset_aggro` + trace clear). Daemon positions are
+  snapshotted (`DaemonSnapshot`) alongside mobs; `SAVE`/`RESTORE` moved to `app.rs::process_command` so
+  the snapshot can include daemon state.
 
 ## Story spine
 
