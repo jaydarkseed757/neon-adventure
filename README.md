@@ -1,5 +1,7 @@
 # Neon Descent
 
+> **WARNING: Lots of AI assistance here.**
+
 A cyberpunk text adventure set in Axiom Arcology, a decaying corporate arcology. Written in Rust using macroquad.
 
 You are a recovery runner sent into the three-years-dark tower to settle a debt the founders left open: Axiom was built on the substrate of an older system, the **Protocol**, and the assets it extracted were never returned. Recover the extracted legacy, deliver it to the lobby upload console, and **jack into the net** to make the final return. Type `OBJECTIVES` at any time to see your progress.
