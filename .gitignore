@@ -6,3 +6,4 @@ CLAUDE.md
 .claude/
 neon_descent.sav
 neon_descent_transcript.txt
+build.rs
