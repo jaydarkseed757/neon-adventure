@@ -195,9 +195,9 @@ impl App {
 
         // Static verb list — canonical user-facing commands, alphabetically sorted
         let verbs: Vec<String> = vec![
-            "again", "ask", "brief", "buy", "drop", "examine", "help", "inventory", "jack",
+            "again", "ask", "brief", "buy", "decrypt", "drop", "examine", "help", "inventory", "jack",
             "knock", "listen", "look", "north", "south", "east", "west", "up", "down",
-            "objectives",
+            "objectives", "use",
             "press", "pull", "push", "quit", "read", "remove", "restart", "restore",
             "save", "scan", "score", "search", "smell", "superbrief", "take", "tell", "touch",
             "transcript", "turn", "undo", "unlock", "verbose", "wait", "wear",

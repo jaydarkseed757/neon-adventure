@@ -31,7 +31,7 @@ id = "study"
 name = "Executive Office"
 description = "A private office thick with the residual smell of recycled air and old electronic components. Display screens cover two walls — all dark, their frames dusty. An executive terminal dominates the far wall, its physical lockout engaged: a brass-key override mechanism retrofitted over the original biometric panel by someone who decided they wanted a lock that couldn't be spoofed. A ventilation duct in the ceiling hums on a frequency that is almost subsonic."
 exits = { west = "library", north = "servants_hall" }
-items = ["cipher_key", "stim_inhaler"]
+items = ["cipher_key", "stim_inhaler", "director_datachip"]
 
 [[rooms]]
 id = "dining_room"
@@ -115,7 +115,7 @@ id = "groundskeepers_shed"
 name = "Maintenance Bay"
 description = "A cluttered equipment depot packed with infrastructure tools — conduit spools, junction boxes, circuit testers with exhausted batteries. A workbench runs along one wall holding bins of components and coiled cable. A small heating element in the corner has been recently active — you can feel the warmth from across the room. Someone was here, and not long ago."
 exits = { west = "tunnel", north = "dead_garden" }
-items = ["cable_shears", "coiled_wire", "thermal_residue"]
+items = ["cable_shears", "coiled_wire", "thermal_residue", "tech_datachip"]
 
 [[rooms]]
 id = "dead_garden"
@@ -164,7 +164,7 @@ id = "guest_room"
 name = "Visitor Suite"
 description = "A visitor suite never properly vacated. A travel case sits at the foot of the sleeping platform, still fastened. A coat is folded over the desk chair. A terminal on the desk is locked in standby mode. A small writing surface near the viewport holds a partial printed message, the cursor blinking at the last typed word, waiting for input that never came."
 exits = { east = "upper_landing" }
-items = ["field_case", "unfinished_letter", "pocket_watch"]
+items = ["field_case", "unfinished_letter", "pocket_watch", "auditor_datachip"]
 
 [[rooms]]
 id = "gravel_path"

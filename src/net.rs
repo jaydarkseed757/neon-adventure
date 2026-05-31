@@ -38,6 +38,9 @@ pub struct NetNode {
     /// ICE family — which ICEbreaker program cracks it (e.g. "military").
     #[serde(default)]
     pub ice_type: Option<String>,
+    /// Braindance memory: a scripted scene played by READ at this node.
+    #[serde(default)]
+    pub memory: Vec<String>,
 }
 
 fn default_trace_rate() -> u8 { 4 }
@@ -251,6 +254,24 @@ fn net_move(label: &str, player: &mut Player, net: &NetStore, daemons: &DaemonSt
 fn net_read(player: &mut Player, net: &NetStore) {
     let cur = match player.net_node.clone() { Some(c) => c, None => return };
     let node = match net.get(&cur) { Some(n) => n, None => return };
+
+    // Braindance memory node: play the scripted scene.
+    if !node.memory.is_empty() {
+        let first = player.first_time(&format!("braindance_{}", cur));
+        ui::print_blank();
+        ui::print_dim(if first {
+            "[ BRAINDANCE — neural playback engaged ]"
+        } else {
+            "[ BRAINDANCE — replay ]"
+        });
+        ui::print_blank();
+        for line in &node.memory {
+            ui::print_ambient(line);
+        }
+        ui::print_blank();
+        ui::print_dim("[ playback ends ]");
+        return;
+    }
 
     match &node.data {
         Some(text) => {

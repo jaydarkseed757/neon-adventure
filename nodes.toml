@@ -18,7 +18,7 @@ data = "A gateway banner cycles slowly: AXIOM ARCOLOGY — INTERNAL MESH — UNR
 id = "archive_node"
 name = "Archive Core"
 description = "The Analyst's domain rendered in data: endless shelving of indexed light, much of it deliberately degraded. Something patient watches you parse it. This is where the building keeps its memory of what was taken."
-links = { back = "entry_relay" }
+links = { back = "entry_relay", memory = "memory_child" }
 trace_rate = 3
 data = "ANALYST // SUMMARY FOR THE AUDITOR WHO COMES AFTER: Axiom was built on a substrate it did not own. The founding agreement of 2047 specifies a return in perpetuity — assets extracted from Protocol systems, to be surrendered when the obligation is called. The Director read the clause. He chose the narrowest framing and sealed what he could. The accounting did not close. It does not close until the legacy is returned to the relay."
 
@@ -34,7 +34,7 @@ data = "PERIMETER LOG // FINAL ENTRY [CORRUPTED]: An auditor arrived in November
 id = "purge_log"
 name = "Executive Partition"
 description = "The Director's private partition, walled off behind access control that has long since gone slack. Inside, a suppressed process still runs in a tight loop — a deletion that was started and never allowed to finish, holding its breath after three years."
-links = { back = "entry_relay" }
+links = { back = "entry_relay", memory = "memory_partner" }
 trace_rate = 4
 data = "PURGE QUEUE // OWNER: DIRECTOR. Marked for deletion: the operations ledger's final section, the contract annotations, one perimeter record. Status: SUSPENDED. The process could not complete the purge — the substrate refused to release the records while the account remained open. He could hide them. He could not unmake them."
 
@@ -66,3 +66,36 @@ description = "The cyberspace face of the lobby's upload console — a single am
 links = { back = "entry_relay" }
 trace_rate = 5
 data = "RELAY STATUS: return queue staged from the lobby console. Issue RETURN to authorise the send. The relay will only complete once the full legacy has been delivered to the console above."
+
+# --- Braindance memory nodes (READ to play the recorded scene) ---
+
+[[nodes]]
+id = "memory_partner"
+name = "Partner Memory"
+description = "A walled-off cache in the executive partition: a single recorded sensorium, looping. Someone preserved a person here — or the shape of one. READ to run the braindance."
+links = { back = "purge_log" }
+trace_rate = 3
+memory = [
+    "You are in the Director's suite, but warm — the heating panel cycling correctly, the way it only did on Thursdays.",
+    "She is here. Not the fractured hologram from the physical room — the whole recording, before the degradation.",
+    "\"He locked the office on the twenty-third. He said the documentation needed to be consolidated. I let him have the word for it.\"",
+    "She turns the tarnished locket over in the playback, and for a moment you feel its weight as if it were in your own hand.",
+    "\"I could not explain adequately what I knew. So I placed things where they would be found, and I trusted that someone would come who asked the right questions.\"",
+    "\"You are asking them. That is more than he ever did.\"",
+    "The loop folds back on itself and begins again, and the warmth goes out of the room.",
+]
+
+[[nodes]]
+id = "memory_child"
+name = "Child Memory"
+description = "A fragile node the Analyst has kept intact at some cost — a child's recorded perception, indexed beside the archive. READ to run the braindance."
+links = { back = "archive_node" }
+trace_rate = 3
+memory = [
+    "The resolution is wrong — too vivid in places, missing in others, the way a child records.",
+    "Drawings scroll past: the city, then wiring diagrams, then something underneath them that the hand keeps starting and stopping on.",
+    "\"I drew them so I would remember the sequence. But I forgot the sequence anyway.\"",
+    "\"Father was afraid of the signals at night. He tried to implement containment. You can't contain signals.\"",
+    "\"It just requires the things that belong to it. The return. It told me that once, when I was very small, and it was not unkind.\"",
+    "The last drawing resolves for half a second — what the child saw from the viewport — and then the playback mercifully drops it.",
+]

@@ -78,6 +78,9 @@ THE NET — jack in with your cyberdeck (JACK IN)
   At a node:  LOOK · GO <route> · READ · RUN <program> · SCAN · BYPASS · RETURN
   Daemons (watchdogs, sentinels, a hunter-killer) patrol the net and spike
   your TRACE. Shake them with RUN ghost_routine, or JACK OUT to reset.
+  ARCHIVE and EXEC each hold a braindance memory node — GO memory, then READ
+  to play a recovered scene. Encrypted datachips found in the building can be
+  READ with a decryptor program for lore and credits.
   Gateway routes: archive, perimeter, exec, vault, relay.
   The VAULT SPINE → PROTOCOL CORE link is sealed by ICE —
   BYPASS it with the iron ring's master access pattern.

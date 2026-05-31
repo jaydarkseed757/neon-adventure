@@ -102,6 +102,8 @@ pub fn handle(input: &str, player: &mut Player, world: &mut World, npcs: &NpcSto
             None       => ui::print_plain("Unlock what?"),
         },
 
+        "decrypt" | "use" => cmd_decrypt(cmd.noun.as_deref(), player, world),
+
         dir if DIRECTIONS.contains(&dir) => go(dir, player, world, npcs, mobs),
 
         // Handle "go <direction>" as a two-word command
@@ -304,6 +306,9 @@ fn gear_description(item: &str) -> Option<&'static str> {
         "optic_implant"     => "An augmented-optics package. INSTALL it to enable SCAN — spectral sweeps of rooms and adjacent net nodes.",
         "credit_shard"      => "A loaded credit shard. Take it to bank the credits.",
         "credit_stick"      => "A fat credit stick. Take it to bank the credits.",
+        "auditor_datachip"  => "An encrypted datachip in a scuffed caddy. READ it with a decryptor program to crack it.",
+        "director_datachip" => "An encrypted datachip bearing an executive seal. READ it with a decryptor to decrypt.",
+        "tech_datachip"     => "A grease-smudged datachip, encrypted. READ it with a decryptor to recover the data.",
         _ => return None,
     })
 }
@@ -677,7 +682,7 @@ fn print_npc_lines(name: &str, lines: &[String]) {
 }
 
 /// Read a legible item in the current room or inventory.
-fn read_item(noun: &str, player: &Player, world: &World) {
+fn read_item(noun: &str, player: &mut Player, world: &World) {
     let normalized = noun.replace(' ', "_");
 
     let room_items: Vec<String> = world.get_room(&player.current_room)
@@ -697,6 +702,7 @@ fn read_item(noun: &str, player: &Player, world: &World) {
 
     match matched {
         None => ui::print_plain(&format!("You don't see any {} to read.", noun.replace('_', " "))),
+        Some(item) if item.ends_with("_datachip") => read_datachip(&item, player),
         Some(item) => match readable_text(&item) {
             Some(text) => {
                 ui::print_blank();
@@ -710,6 +716,91 @@ fn read_item(noun: &str, player: &Player, world: &World) {
                 item.replace('_', " ")
             )),
         },
+    }
+}
+
+/// DECRYPT / USE — resolve a datachip (by name or auto-pick) and crack it.
+fn cmd_decrypt(noun: Option<&str>, player: &mut Player, world: &World) {
+    let room_items: Vec<String> = world.get_room(&player.current_room)
+        .map(|r| r.items.clone())
+        .unwrap_or_default();
+    let all_items: Vec<String> = player.inventory.iter()
+        .chain(room_items.iter())
+        .cloned()
+        .collect();
+
+    // A noun that names the tool, the target generically, or nothing → auto-pick.
+    let auto = matches!(noun, None | Some("decryptor") | Some("it") | Some("chip")
+        | Some("datachip") | Some("data_chip"));
+
+    let target: Option<String> = if auto {
+        all_items.iter().find(|i| i.ends_with("_datachip")).cloned()
+    } else {
+        let n = noun.unwrap();
+        let normalized = n.replace(' ', "_");
+        let m = if all_items.contains(&normalized) {
+            Some(normalized)
+        } else {
+            parser::fuzzy_match(n, &all_items).cloned()
+        };
+        match m {
+            Some(item) if item.ends_with("_datachip") => Some(item),
+            Some(item) => {
+                ui::print_plain(&format!("The {} isn't encrypted.", item.replace('_', " ")));
+                return;
+            }
+            None => {
+                ui::print_plain(&format!("You don't see any {} here.", n.replace('_', " ")));
+                return;
+            }
+        }
+    };
+
+    match target {
+        Some(item) => read_datachip(&item, player),
+        None => ui::print_plain("You have nothing encrypted to decrypt here."),
+    }
+}
+
+/// Encrypted datachips: require the decryptor program. First decrypt yields
+/// lore + credits (no score, so the legacy economy is untouched).
+fn read_datachip(item: &str, player: &mut Player) {
+    if !player.has_item("decryptor") {
+        ui::print_error(&format!(
+            "The {} is encrypted — military-grade. You need a decryptor program to crack it.",
+            item.replace('_', " ")));
+        return;
+    }
+
+    let (reward, text) = match item {
+        "auditor_datachip" => (50,
+"DECRYPTED — AUDITOR FIELD ARCHIVE:
+  Personal log, final fragment. 'They told me the audit was routine. It is not routine.
+  The arcology is carrying a liability it never recorded — a debt to whatever the founders
+  built on. The Director knew. He buried it under classified cost centers. If you are
+  reading this, the account is still open, and they will not let you leave until it closes.'"),
+        "director_datachip" => (60,
+"DECRYPTED — DIRECTOR'S PRIVATE PARTITION:
+  'Containment is holding. The substrate is patient; that is its nature and its threat.
+  I have sealed what can be sealed and routed the obligation to my successors. Let them
+  weigh it. I am done weighing it.' The entry is signed and then, beneath, in a different
+  pass: 'It was never mine to defer.'"),
+        "tech_datachip" => (40,
+"DECRYPTED — MAINTENANCE LOG:
+  'Six weeks cutting a conduit nobody approved on paper. He said infrastructure. It wasn't
+  infrastructure. I ran ferrocrete from the vault straight down to the old passage. The
+  thing down there knew the moment I broke through. I have not slept properly since.'"),
+        _ => (30, "DECRYPTED: fragmentary data — corrupted beyond full recovery."),
+    };
+
+    ui::print_blank();
+    for line in text.lines() { ui::print_plain(line); }
+    ui::print_blank();
+
+    if player.first_time(&format!("decrypt_{}", item)) {
+        player.credits += reward;
+        ui::print_score_notice(&format!(
+            "[ Salvaged data brokered for {} credits. Balance: {}. ]", reward, player.credits));
     }
 }
 
@@ -1608,6 +1699,7 @@ fn print_help() {
     ui::print_plain("  JACK IN / JACK OUT    — connect to (or leave) the net via your cyberdeck");
     ui::print_plain("  (in the net: GO <route>, READ, RUN <program>, SCAN, BYPASS, RETURN)");
     ui::print_plain("  (watch your TRACE — daemons patrol the net and drive it up; RUN ghost_routine or JACK OUT)");
+    ui::print_plain("  DECRYPT <chip>        — crack an encrypted datachip (needs a decryptor)");
     ui::print_plain("  INSTALL <cyberware>   — install an augmentation (also WEAR)");
     ui::print_plain("  SCAN                  — optic-implant sweep of a room or net node");
     ui::print_plain("  BUY [item]            — list or purchase from the fixer");

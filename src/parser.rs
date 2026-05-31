@@ -198,6 +198,7 @@ pub fn parse(input: &str) -> Command {
         "wear" | "don" | "put" | "install"          => "wear",
         "remove" | "doff" | "unwear" | "uninstall" => "remove",
         "run" | "execute" | "load"                  => "run",
+        "use" | "apply"                             => "use",
         other                                       => other,
     };
 

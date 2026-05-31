@@ -197,6 +197,17 @@ purge queue, vault ICE spine, the Protocol core, and the upload relay).
   snapshotted (`DaemonSnapshot`) alongside mobs; `SAVE`/`RESTORE` moved to `app.rs::process_command` so
   the snapshot can include daemon state.
 
+## Net content — datachips & braindance (`net.rs`, `commands.rs`, `nodes.toml`)
+
+- **Encrypted datachips**: `*_datachip` world items (seeded in rooms). `read_item` branches on the
+  `_datachip` suffix to `read_datachip` (it takes `&mut Player`): without the `decryptor` program it
+  reports "encrypted"; with it, prints decrypted lore and — once, via `first_time("decrypt_<id>")` —
+  awards **credits** (not score, so the legacy economy is untouched). This gives the `decryptor` a real use.
+- **Braindance memory nodes**: `NetNode` gains a `memory: Vec<String>` field. Two nodes
+  (`memory_partner`, `memory_child`) hang off `purge_log` / `archive_node`. `net_read` plays the
+  scripted scene line-by-line when `memory` is non-empty (flagged `braindance_<node>` for first-vs-replay),
+  ahead of the normal `data` text. Pure lore — no score.
+
 ## Story spine
 
 The fiction (an ancient **Protocol** owed a return of extracted assets) is surfaced two ways:
