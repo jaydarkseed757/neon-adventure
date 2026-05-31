@@ -1506,12 +1506,11 @@ fn cmd_ghost(player: &mut Player, world: &World) {
 fn print_version() {
     ui::print_blank();
     ui::print_room_header("NEON DESCENT");
-    // BUILD_* come from build.rs, which is optional (untracked) — fall back gracefully.
     ui::print_plain(&format!("  {:<16} {}", "Version",  env!("CARGO_PKG_VERSION")));
-    ui::print_plain(&format!("  {:<16} {}", "Built",    option_env!("BUILD_DATE").unwrap_or("unknown")));
-    ui::print_plain(&format!("  {:<16} {}", "Target",   option_env!("BUILD_TARGET").unwrap_or("unknown")));
-    ui::print_plain(&format!("  {:<16} {}", "Profile",  option_env!("BUILD_PROFILE").unwrap_or("unknown")));
-    ui::print_plain(&format!("  {:<16} {}", "Compiler", option_env!("BUILD_RUSTC").unwrap_or("unknown")));
+    ui::print_plain(&format!("  {:<16} {}", "Built",    env!("BUILD_DATE")));
+    ui::print_plain(&format!("  {:<16} {}", "Target",   env!("BUILD_TARGET")));
+    ui::print_plain(&format!("  {:<16} {}", "Profile",  env!("BUILD_PROFILE")));
+    ui::print_plain(&format!("  {:<16} {}", "Compiler", env!("BUILD_RUSTC")));
     ui::print_plain(&format!("  {:<16} {}", "Author",   env!("CARGO_PKG_AUTHORS")));
     ui::print_blank();
 }
