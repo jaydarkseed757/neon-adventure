@@ -71,6 +71,9 @@ impl Player {
 
     pub fn drop_item(&mut self, item: &str) -> Option<String> {
         if let Some(pos) = self.inventory.iter().position(|i| i == item) {
+            // Leaving inventory means no longer installed/worn — keeps the
+            // invariant that `worn` is always a subset of `inventory`.
+            self.worn.remove(item);
             Some(self.inventory.remove(pos))
         } else {
             None

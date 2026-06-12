@@ -477,12 +477,17 @@ fn drop_item(noun: &str, player: &mut Player, world: &mut World) {
         }
     };
 
+    let was_worn = player.worn.contains(&item_name);
     match player.drop_item(&item_name) {
         Some(item) => {
             if let Some(room) = world.get_room_mut(&player.current_room) {
                 room.items.push(item.clone());
             }
-            ui::print_plain(&format!("You drop the {}.", item.replace('_', " ")));
+            if was_worn {
+                ui::print_plain(&format!("You uninstall the {} and drop it.", item.replace('_', " ")));
+            } else {
+                ui::print_plain(&format!("You drop the {}.", item.replace('_', " ")));
+            }
 
             // Deposit bonuses (foyer only)
             if player.current_room == "foyer" {
