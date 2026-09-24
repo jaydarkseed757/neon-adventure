@@ -3,7 +3,7 @@ use serde::Deserialize;
 
 use crate::ui;
 use crate::parser;
-use crate::player::Player;
+use crate::player::{Player, WIN_SCORE};
 use crate::world::World;
 use crate::net_daemons::DaemonStore;
 use crate::commands::Action;
@@ -110,6 +110,10 @@ pub fn look(net: &NetStore, node_id: &str, _player: &Player) {
 /// transitions are handled upstream in app.rs; this never sees them.
 pub fn handle(input: &str, player: &mut Player, _world: &mut World, net: &NetStore, daemons: &mut DaemonStore) -> Action {
     player.turn += 1;
+    // Trace thresholds are judged against the level at the start of the turn:
+    // a contested exit (+6 in net_move) can raise trace before accrual, and
+    // must not let the player skip past the 50/80 warnings and the hunter.
+    let trace_at_start = player.trace;
     let cmd = parser::parse(input);
     let node_id = match player.net_node.clone() {
         Some(n) => n,
@@ -129,7 +133,7 @@ pub fn handle(input: &str, player: &mut Player, _world: &mut World, net: &NetSto
         "bypass" | "crack" | "decrypt" => net_bypass(player, net),
 
         "run" | "execute" | "load" => match cmd.noun.as_deref() {
-            Some(prog) => net_run(prog, player, net),
+            Some(prog) => net_run(prog, player, net, daemons),
             None => ui::print_plain("Run what? Name a program you're carrying."),
         },
 
@@ -170,13 +174,13 @@ pub fn handle(input: &str, player: &mut Player, _world: &mut World, net: &NetSto
         }
         let add = rate.saturating_add(spike);
 
-        let before = player.trace;
-        player.trace = before.saturating_add(add).min(100);
+        let before = trace_at_start;
+        player.trace = player.trace.saturating_add(add).min(100);
         if before < 50 && player.trace >= 50 {
             ui::print_ambient("A trace is tightening on your signal. Something is following it back toward you.");
         }
         if before < 80 && player.trace >= 80 {
-            ui::print_error("TRACE CRITICAL — a hunter-killer is dispatched. Shake it or get out.");
+            ui::print_error("TRACE CRITICAL — a hunter-killer is dispatched. Shake it with a ghost routine, or get out.");
             if player.first_time("hunter_active") {
                 daemons.activate_hunter(&cur);
             }
@@ -205,7 +209,7 @@ fn flatline(player: &mut Player) {
     player.integrity = 20;
     player.score     = player.score.saturating_sub(PENALTY);
     player.turn      = player.turn.saturating_add(3);
-    // Dropping below 100 re-arms the console nudge if the player climbs back.
+    // Dropping below WIN_SCORE re-arms the console nudge if the player climbs back.
     player.scored_events.remove("console_armed_nudge");
     // Let the hunter-killer re-arm on a future run.
     player.scored_events.remove("hunter_active");
@@ -331,7 +335,7 @@ fn bite(player: &mut Player, attack: u8) {
 }
 
 /// RUN a program from inventory while jacked in.
-fn net_run(prog_noun: &str, player: &mut Player, net: &NetStore) {
+fn net_run(prog_noun: &str, player: &mut Player, net: &NetStore, daemons: &mut DaemonStore) {
     let normalized = prog_noun.replace(' ', "_");
     // Resolve against inventory (exact, then fuzzy).
     let prog = if player.has_item(&normalized) {
@@ -355,6 +359,14 @@ fn net_run(prog_noun: &str, player: &mut Player, net: &NetStore) {
             ui::print_exits(&format!(
                 "Ghost routine deploys — it scatters decoy signatures across the mesh. Trace falls {}% → {}%.",
                 before, player.trace));
+            // The decoys are how you shake a hunter-killer: it loses the scent
+            // and goes dormant. Clearing the flag lets it re-dispatch if trace
+            // climbs past the critical line again.
+            if daemons.hunter_active() {
+                daemons.reset_aggro();
+                player.scored_events.remove("hunter_active");
+                ui::print_exits("The hunter-killer lunges at a decoy, tears it apart, and loses your scent. It sinks back into the dark.");
+            }
         }
 
         "repair_daemon" => {
@@ -460,7 +472,7 @@ fn net_return(player: &mut Player) -> Action {
         return Action::Continue;
     }
 
-    if player.score < 100 {
+    if player.score < WIN_SCORE {
         ui::print_error("The relay holds the channel open but refuses to send. The return is incomplete.");
         ui::print_dim("The legacy must be fully delivered to the lobby console before the relay will authorise the send. Check OBJECTIVES.");
         return Action::Continue;

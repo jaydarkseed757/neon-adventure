@@ -1,5 +1,11 @@
 use std::collections::HashSet;
 
+/// Score needed to arm the upload console and authorise the net RETURN.
+pub const WIN_SCORE: u32 = 100;
+/// Hard ceiling on the score. More points exist in the world than this, so
+/// some slack remains to earn back a flatline penalty.
+pub const MAX_SCORE: u32 = 120;
+
 #[derive(Clone, Copy, PartialEq)]
 pub enum VerboseMode {
     /// Always show full room description (VERBOSE).
@@ -85,13 +91,16 @@ impl Player {
         self.scored_events.insert(event.to_string())
     }
 
-    /// Award points for a one-time event. Returns points awarded (0 if already scored).
-    pub fn award(&mut self, event: &str, points: u32) -> u32 {
-        if self.first_time(event) {
-            self.score += points;
-            points
-        } else {
-            0
+    /// Award points for a one-time event, clamped to MAX_SCORE.
+    /// Returns `None` if the event was already scored, otherwise `Some(points
+    /// actually gained)` — which is 0 once the cap is reached, so callers can
+    /// still show the event's flavor text.
+    pub fn award(&mut self, event: &str, points: u32) -> Option<u32> {
+        if !self.first_time(event) {
+            return None;
         }
+        let gained = points.min(MAX_SCORE.saturating_sub(self.score));
+        self.score += gained;
+        Some(gained)
     }
 }

@@ -33,6 +33,12 @@ impl TitleScreen {
         self.texture = Some(tex);
     }
 
+    /// Free the title texture (~6 MB of GPU memory) once the title is dismissed —
+    /// the game never returns to this screen.
+    pub fn unload(&mut self) {
+        self.texture = None;
+    }
+
     /// Returns true once the user has pressed Enter/Space and the brief pause is done.
     pub fn update_and_render(&mut self, _font_reg: &Font, _font_bold: &Font) -> bool {
         let now = get_time();
