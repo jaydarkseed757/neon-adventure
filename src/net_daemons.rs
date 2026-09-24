@@ -187,7 +187,12 @@ impl DaemonStore {
         }
     }
 
-    /// Send the hunter-killer dormant again (on jack out / flatline).
+    /// True while the hunter-killer is placed on the net (pursuing).
+    pub fn hunter_active(&self) -> bool {
+        self.daemons.iter().any(|d| d.id == HUNTER_ID && d.current_node != DORMANT)
+    }
+
+    /// Send the hunter-killer dormant again (on jack out / flatline / ghost routine).
     pub fn reset_aggro(&mut self) {
         if let Some(h) = self.daemons.iter_mut().find(|d| d.id == HUNTER_ID) {
             h.current_node = DORMANT.to_string();
