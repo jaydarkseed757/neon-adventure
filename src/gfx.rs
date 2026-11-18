@@ -96,6 +96,13 @@ impl ScrollState {
         }
     }
 
+    /// Re-apply scroll bounds each frame. The output area's height changes
+    /// with the window, so a vertical resize must re-pin (or re-clamp) the view.
+    pub fn sync(&mut self) {
+        let max = self.max_scroll();
+        self.offset_px = if self.auto_scroll { max } else { self.offset_px.min(max) };
+    }
+
     pub fn scroll_by(&mut self, delta_px: f32) {
         self.offset_px = (self.offset_px + delta_px).clamp(0.0, self.max_scroll());
         self.auto_scroll = self.offset_px >= self.max_scroll() - 1.0;
@@ -126,34 +133,27 @@ pub fn wrap_new_lines(
             continue;
         }
 
-        // Flatten into word tokens with their style
-        let mut words: Vec<(String, Style)> = Vec::new();
-        for seg in &line.segments {
-            for word in seg.text.split_inclusive(' ') {
-                words.push((word.to_string(), seg.style));
-            }
-        }
-
         let mut row_segs: Vec<Segment> = Vec::new();
         let mut row_w = 0.0f32;
 
-        for (word, style) in words {
+        for (word, style) in line.segments.iter()
+            .flat_map(|seg| seg.text.split_inclusive(' ').map(move |w| (w, seg.style)))
+        {
             let font = fonts.select(&style);
-            let ww = mw(&word, font, FONT_SIZE);
+            let ww = mw(word, font, FONT_SIZE);
             if row_w + ww > max_w && !row_segs.is_empty() {
-                rendered.push(RenderedLine { segments: row_segs.clone(), y_offset: y });
+                rendered.push(RenderedLine { segments: std::mem::take(&mut row_segs), y_offset: y });
                 y += LINE_H;
-                row_segs.clear();
                 row_w = 0.0;
             }
             if let Some(last) = row_segs.last_mut() {
                 if last.style == style {
-                    last.text.push_str(&word);
+                    last.text.push_str(word);
                     row_w += ww;
                     continue;
                 }
             }
-            row_segs.push(Segment { text: word, style });
+            row_segs.push(Segment { text: word.to_string(), style });
             row_w += ww;
         }
         if !row_segs.is_empty() {
@@ -221,16 +221,21 @@ pub fn render_output_area(rendered: &[RenderedLine], scroll: &ScrollState, fonts
 
     draw_rectangle(0.0, top, w, h, BG);
 
-    for line in rendered {
+    // Lines are sorted by y_offset, so binary-search to the first visible one
+    // instead of walking the whole session history every frame.
+    let first = rendered.partition_point(|l| {
+        top + l.y_offset - scroll.offset_px + FONT_SIZE as f32 + LINE_H < top
+    });
+
+    for line in &rendered[first..] {
         let screen_y = top + line.y_offset - scroll.offset_px + FONT_SIZE as f32;
-        if screen_y + LINE_H < top { continue; }
         if screen_y - FONT_SIZE as f32 > bot { break; }
 
         let mut x = MARGIN;
         for seg in &line.segments {
             let font = fonts.select(&seg.style);
-            draw_text_ex(&seg.text, x, screen_y, tp(font, FONT_SIZE, seg.style.color.to_mq_color()));
-            x += mw(&seg.text, font, FONT_SIZE);
+            // draw_text_ex returns the advance it drew — no second measure pass.
+            x += draw_text_ex(&seg.text, x, screen_y, tp(font, FONT_SIZE, seg.style.color.to_mq_color())).width;
         }
     }
 
@@ -255,8 +260,7 @@ pub fn render_input_bar(input: &InputState, fonts: &Fonts, in_net: bool) {
     let y = top + h / 2.0 + FONT_SIZE as f32 / 2.0 - 2.0;
 
     let prompt = if in_net { "NET> " } else { "> " };
-    draw_text_ex(prompt, MARGIN, y, tp(&fonts.bold, FONT_SIZE, PROMPT_COL));
-    let pw = mw(prompt, &fonts.bold, FONT_SIZE);
+    let pw = draw_text_ex(prompt, MARGIN, y, tp(&fonts.bold, FONT_SIZE, PROMPT_COL)).width;
 
     let text = &input.buffer;
     draw_text_ex(text, MARGIN + pw, y, tp(&fonts.regular, FONT_SIZE, TextColor::Default.to_mq_color()));

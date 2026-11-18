@@ -114,7 +114,8 @@ pub fn restore_snapshot(snap: GameSnapshot, player: &mut Player, world: &mut Wor
     player.inventory     = snap.player.inventory;
     player.worn          = snap.player.worn;
     player.visited       = snap.player.visited;
-    player.score         = snap.player.score;
+    // Saves from before the cap existed may hold more than MAX_SCORE.
+    player.score         = snap.player.score.min(crate::player::MAX_SCORE);
     player.turn          = snap.player.turn;
     player.scored_events = snap.player.scored_events;
     player.dialogue_seen = snap.player.dialogue_seen;

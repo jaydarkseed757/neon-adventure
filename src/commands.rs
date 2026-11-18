@@ -1,5 +1,5 @@
 use crate::parser;
-use crate::player::{Player, VerboseMode};
+use crate::player::{Player, VerboseMode, MAX_SCORE, WIN_SCORE};
 use crate::world::World;
 use crate::npcs::NpcStore;
 use crate::mobs::MobStore;
@@ -14,7 +14,8 @@ pub enum Action {
     Exit,
 }
 
-/// Resident set size of the current process in bytes, via getrusage(2).
+/// Peak resident set size of the process in bytes, via getrusage(2) — ru_maxrss
+/// is the high-water mark, not the current figure.
 /// Returns None if the syscall fails.
 fn rss_bytes() -> Option<u64> {
     let mut usage = unsafe { std::mem::zeroed::<libc::rusage>() };
@@ -30,10 +31,21 @@ fn rss_bytes() -> Option<u64> {
 
 const DIRECTIONS: &[&str] = &["north", "south", "east", "west", "up", "down"];
 
+/// Informational verbs: they take no game time, don't tick the world, and
+/// don't overwrite the UNDO snapshot.
+pub fn is_meta(verb: &str) -> bool {
+    matches!(verb,
+        "help" | "score" | "objectives" | "inventory" | "version" | "ver" | "runtime" |
+        "verbose" | "brief" | "superbrief")
+}
+
 /// Entry point for all input. Returns the action the main loop should take.
 pub fn handle(input: &str, player: &mut Player, world: &mut World, npcs: &NpcStore, mobs: &mut MobStore, amb: &mut Ambient) -> Action {
-    player.turn += 1;
     let cmd = parser::parse(input);
+    let meta = is_meta(&cmd.verb);
+    if !meta {
+        player.turn += 1;
+    }
 
     match cmd.verb.as_str() {
         "quit" => return Action::Exit,
@@ -165,17 +177,23 @@ pub fn handle(input: &str, player: &mut Player, world: &mut World, npcs: &NpcSto
         _ => ui::print_error(&format!("I don't understand '{}'.", input)),
     }
 
+    // Meta commands (the only ones routed here while jacked in) leave the
+    // physical world frozen — no ambient lines or mob movement mid-run.
+    if meta || player.net_node.is_some() {
+        return Action::Continue;
+    }
+
     amb.tick(&player.current_room, player.turn);
     mobs.tick(&player.current_room);
 
     // Neural integrity recovers slowly while out of the net.
-    if player.net_node.is_none() && player.integrity < 100 {
+    if player.integrity < 100 {
         player.integrity = (player.integrity + 5).min(100);
     }
 
     // Reaching a full score arms the console, but the return itself is made in
     // the net at the upload relay — not here. Nudge the player there once.
-    if player.score >= 100 && player.first_time("console_armed_nudge") {
+    if player.score >= WIN_SCORE && player.first_time("console_armed_nudge") {
         ui::print_blank();
         ui::print_score_notice("The lobby upload console flares to a steady amber. The full legacy is staged.");
         ui::print_dim("Jack into the net and route to the upload relay to authorise the return.");
@@ -298,7 +316,7 @@ fn gear_description(item: &str) -> Option<&'static str> {
     Some(match item {
         "cyberdeck"         => "Your deck — a battered personal cyberdeck. JACK IN with it to reach the local net.",
         "icebreaker_hammer" => "A brute-force ICEbreaker on a worn cartridge. It chews through military-class barrier ICE. RUN it against sealed ICE while jacked in.",
-        "ghost_routine"     => "A stealth program. It scatters decoy signatures across the mesh — RUN it in the net to shed accumulated trace.",
+        "ghost_routine"     => "A stealth program. It scatters decoy signatures across the mesh — RUN it in the net to shed accumulated trace and throw off a pursuing hunter-killer.",
         "repair_daemon"     => "A single-use restoration program. RUN it in the net to rebuild neural integrity. It burns out on use.",
         "decryptor"         => "A decryption suite for locked datachips. RUN it where encrypted data is staged.",
         "neural_dampener"   => "A subdermal feedback buffer. INSTALL (WEAR) it to halve the integrity damage black ICE deals.",
@@ -340,10 +358,9 @@ fn go(direction: &str, player: &mut Player, world: &World, npcs: &NpcStore, mobs
                     _                 => (0, ""),
                 };
                 if pts > 0 {
-                    let awarded = player.award(&format!("explore_{}", dest_id), pts);
-                    if awarded > 0 {
+                    if let Some(gained) = player.award(&format!("explore_{}", dest_id), pts) {
                         ui::print_ambient(msg);
-                        score_notice(awarded);
+                        score_notice(gained);
                     }
                 }
             }
@@ -435,10 +452,9 @@ fn take(noun: &str, player: &mut Player, world: &mut World) {
         _                 => (0, ""),
     };
     if pts > 0 {
-        let awarded = player.award(&format!("discover_{}", item), pts);
-        if awarded > 0 {
+        if let Some(gained) = player.award(&format!("discover_{}", item), pts) {
             ui::print_ambient(msg);
-            score_notice(awarded);
+            score_notice(gained);
         }
     }
 }
@@ -504,10 +520,9 @@ fn drop_item(noun: &str, player: &mut Player, world: &mut World) {
                     _                  => (0, ""),
                 };
                 if pts > 0 {
-                    let awarded = player.award(&format!("deposit_{}", item), pts);
-                    if awarded > 0 {
+                    if let Some(gained) = player.award(&format!("deposit_{}", item), pts) {
                         ui::print_ambient(msg);
-                        score_notice(awarded);
+                        score_notice(gained);
                     }
                 }
             }
@@ -541,7 +556,7 @@ fn unlock_target(noun: &str, player: &mut Player, world: &mut World) {
             let awarded = player.award("puzzle_iron_door", 6);
             ui::print_plain("One of the physical keys on the ring engages. It takes both hands to turn it.");
             ui::print_plain("The security door disengages its deadbolts and grinds open, exhaling a breath of refrigerated air from the passage beyond.");
-            if awarded > 0 { score_notice(awarded); }
+            if let Some(gained) = awarded { score_notice(gained); }
         }
 
         // Puzzle 2: Executive terminal in the office — requires cipher_key
@@ -561,7 +576,7 @@ fn unlock_target(noun: &str, player: &mut Player, world: &mut World) {
             let awarded = player.award("puzzle_desk", 8);
             ui::print_plain("The cipher key engages the physical override. The terminal panel retracts with a mechanical click.");
             ui::print_plain("Inside: archived correspondence, a dead credential token — and a folded document bearing the Director's seal.");
-            if awarded > 0 { score_notice(awarded); }
+            if let Some(gained) = awarded { score_notice(gained); }
         }
 
         // Puzzle 3: Security door on executive level — requires biometric_chip
@@ -584,7 +599,7 @@ fn unlock_target(noun: &str, player: &mut Player, world: &mut World) {
             let awarded = player.award("puzzle_padlock", 10);
             ui::print_plain("The biometric chip engages the combination lock. A sound like a pressurized seal releasing.");
             ui::print_plain("The chain drops. The security door swings inward on stiff hinges, revealing a maintenance stairway above.");
-            if awarded > 0 { score_notice(awarded); }
+            if let Some(gained) = awarded { score_notice(gained); }
         }
 
         _ => ui::print_error("You don't see anything to unlock here with that."),
@@ -629,7 +644,8 @@ fn print_score(player: &Player) {
 
     ui::print_blank();
     ui::print_room_header("AXIOM ARCOLOGY — FULL SCORE");
-    ui::print_score_notice(&format!("  Score: {} out of 100  ({})", player.score, rank));
+    ui::print_score_notice(&format!("  Score: {} out of {}  ({})", player.score, MAX_SCORE, rank));
+    ui::print_dim(&format!("  ({} arms the upload console for the return.)", WIN_SCORE));
     ui::print_blank();
 
     ui::print_room_header("EXPLORATION");
@@ -669,8 +685,9 @@ fn print_score(player: &Player) {
     ui::print_blank();
 }
 
-/// Print a score increase notice.
+/// Print a score increase notice (nothing once the score is capped).
 fn score_notice(pts: u32) {
+    if pts == 0 { return; }
     ui::print_score_notice(&format!(
         "[Your score has increased by {} point{}.]",
         pts, if pts == 1 { "" } else { "s" }
@@ -1572,10 +1589,10 @@ fn print_runtime(player: &Player, world: &World, npcs: &NpcStore, mobs: &MobStor
         ui::print_plain(&format!("  {:<22} {}  ({})", "Mobs", mob_count,
             mob_locations.join(", ")));
     }
-    ui::print_plain(&format!("  {:<22} {} / 100", "Score", player.score));
+    ui::print_plain(&format!("  {:<22} {} / {}", "Score", player.score, MAX_SCORE));
     ui::print_plain(&format!("  {:<22} {}  (turn {})", "Time",
         ambient::time_label(player.turn), player.turn));
-    ui::print_plain(&format!("  {:<22} {}", "Memory (RSS)", mem_str));
+    ui::print_plain(&format!("  {:<22} {}", "Peak memory (RSS)", mem_str));
     ui::print_blank();
 }
 
@@ -1633,7 +1650,7 @@ fn print_objectives(player: &Player) {
     let returned_count  = LEGACY_ASSETS.iter().filter(|(id, _)| returned(id)).count();
     let total           = LEGACY_ASSETS.len();
     let legacy_done     = recovered_count == total;
-    let return_done     = player.score >= 100;
+    let return_done     = player.score >= WIN_SCORE;
 
     ui::print_blank();
     ui::print_room_header("OBJECTIVES");
@@ -1658,8 +1675,8 @@ fn print_objectives(player: &Player) {
 
     ui::print_score_line(
         return_done,
-        &format!("Make the return at the upload console  ({}/{} returned, score {}/100)",
-            returned_count, total, player.score),
+        &format!("Make the return at the upload console  ({}/{} returned, score {}/{} to arm)",
+            returned_count, total, player.score, WIN_SCORE),
         "",
     );
 
@@ -1703,7 +1720,8 @@ fn print_help() {
     ui::print_plain("  KNOCK [thing]         — knock on a door or surface");
     ui::print_plain("  JACK IN / JACK OUT    — connect to (or leave) the net via your cyberdeck");
     ui::print_plain("  (in the net: GO <route>, READ, RUN <program>, SCAN, BYPASS, RETURN)");
-    ui::print_plain("  (watch your TRACE — daemons patrol the net and drive it up; RUN ghost_routine or JACK OUT)");
+    ui::print_plain("  (watch your TRACE — daemons patrol the net and drive it up; RUN ghost_routine to shed it");
+    ui::print_plain("   and shake a hunter-killer, or JACK OUT)");
     ui::print_plain("  DECRYPT <chip>        — crack an encrypted datachip (needs a decryptor)");
     ui::print_plain("  INSTALL <cyberware>   — install an augmentation (also WEAR)");
     ui::print_plain("  SCAN                  — optic-implant sweep of a room or net node");

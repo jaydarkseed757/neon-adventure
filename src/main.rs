@@ -13,6 +13,8 @@ mod input;
 mod net;
 mod net_daemons;
 mod app;
+#[cfg(test)]
+mod tests;
 
 use macroquad::prelude::*;
 

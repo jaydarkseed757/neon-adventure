@@ -73,8 +73,13 @@ impl InputState {
             dirty = true;
         }
 
-        // Printable characters
+        // Printable characters. macroquad's queue pops newest-first, so collect
+        // and reverse — otherwise two keys landing in one frame come out swapped.
+        let mut typed: Vec<char> = Vec::new();
         while let Some(ch) = get_char_pressed() {
+            typed.push(ch);
+        }
+        for ch in typed.into_iter().rev() {
             if !ch.is_control() {
                 self.buffer.insert(self.cursor_pos, ch);
                 self.cursor_pos += ch.len_utf8();

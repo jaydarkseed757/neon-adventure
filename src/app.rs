@@ -1,4 +1,4 @@
-use macroquad::input::mouse_wheel;
+use macroquad::input::{clear_input_queue, mouse_wheel};
 use macroquad::prelude::clear_background;
 use macroquad::text::load_ttf_font_from_bytes;
 use macroquad::window::screen_width;
@@ -50,6 +50,9 @@ pub struct App {
     // UNDO / AGAIN state
     pub undo_snapshot: Option<save::GameSnapshot>,
     pub last_input:    Option<String>,
+
+    // True after QUIT while waiting for the Y/N answer.
+    pub confirm_quit:  bool,
 }
 
 impl App {
@@ -65,17 +68,13 @@ impl App {
 
         let fonts = Fonts { regular, bold, italic };
 
-        let (world, player, mob_store, ambient) = new_game();
+        let (world, player, mob_store, ambient, daemons) = new_game();
         let npc_store = NpcStore::load().unwrap_or_else(|e| {
             eprintln!("Failed to load npcs.toml: {}", e);
             std::process::exit(1);
         });
         let net = NetStore::load().unwrap_or_else(|e| {
             eprintln!("Failed to load nodes.toml: {}", e);
-            std::process::exit(1);
-        });
-        let daemons = DaemonStore::load().unwrap_or_else(|e| {
-            eprintln!("Failed to load daemons.toml: {}", e);
             std::process::exit(1);
         });
 
@@ -101,6 +100,7 @@ impl App {
             undo_snapshot: None,
             last_input:    None,
             last_width:    0.0,
+            confirm_quit:  false,
         }
     }
 
@@ -109,15 +109,20 @@ impl App {
             AppState::Title => {
                 if self.title.update_and_render(&self.fonts.regular, &self.fonts.bold) {
                     self.state = AppState::Playing;
+                    self.title.unload();
+                    // macroquad never clears its char queue on its own — drop the
+                    // keys typed on the title (incl. the Space that dismissed it)
+                    // so they don't leak into the first prompt.
+                    clear_input_queue();
                     // Opening briefing, then the initial room look
                     commands::print_intro();
                     commands::look(&self.player, &self.world, &self.mob_store);
                     self.drain_to_buf();
+                    self.update_completions();
                 }
             }
 
             AppState::Playing => {
-                self.update_completions();
                 let (submitted, _) = self.input.handle_frame();
 
                 if let Some(ref cmd) = submitted {
@@ -133,11 +138,12 @@ impl App {
                             ui::print_blank();
                             ui::print_dim("--- Restarting Axiom Arcology... ---");
                             ui::print_blank();
-                            let (world, player, mob_store, ambient) = new_game();
+                            let (world, player, mob_store, ambient, daemons) = new_game();
                             self.world     = world;
                             self.player    = player;
                             self.mob_store = mob_store;
                             self.ambient   = ambient;
+                            self.daemons   = daemons;
                             self.undo_snapshot = None;
                             self.last_input    = None;
                             commands::look(&self.player, &self.world, &self.mob_store);
@@ -145,6 +151,9 @@ impl App {
                         }
                         Action::Continue => {}
                     }
+                    // Completion lists only change when game state does — i.e.
+                    // after a command — so rebuild them here, not every frame.
+                    self.update_completions();
                 }
 
                 self.render_frame();
@@ -163,6 +172,7 @@ impl App {
             self.scroll.scroll_by(-dy * gfx::LINE_H * 3.0);
         }
         self.rebuild_render_cache();
+        self.scroll.sync();
         let net_label = self.player.net_node.as_ref()
             .and_then(|id| self.net.get(id))
             .map(|n| n.name.as_str());
@@ -179,7 +189,7 @@ impl App {
         // While jacked in, complete net verbs and the current node's route labels.
         if let Some(node_id) = self.player.net_node.clone() {
             let verbs: Vec<String> = ["look", "go", "read", "run", "scan", "bypass", "return",
-                "jack", "disconnect", "help", "objectives", "save", "restore", "quit"]
+                "jack", "disconnect", "help", "inventory", "objectives", "score", "save", "restore", "quit"]
                 .into_iter().map(String::from).collect();
             let mut nouns: Vec<String> = vec!["out".to_string()];
             if let Some(node) = self.net.get(&node_id) {
@@ -234,6 +244,26 @@ impl App {
         // Echo the player's command into the output
         self.scroll_buf.push(ui::StyledLine::echo(input));
 
+        // A pending QUIT confirmation consumes this line: Y quits, anything
+        // else cancels (Infocom-style).
+        if self.confirm_quit {
+            self.confirm_quit = false;
+            if input == "y" || input == "yes" {
+                return Action::Exit;
+            }
+            ui::print_plain("Good. The arcology is still waiting.");
+            self.drain_to_buf();
+            return Action::Continue;
+        }
+
+        // QUIT / EXIT / Q — ask first; it closes the window with no autosave.
+        if parser::parse(input).verb == "quit" {
+            self.confirm_quit = true;
+            ui::print_plain("Are you sure you want to quit? Unsaved progress will be lost. (Y/N)");
+            self.drain_to_buf();
+            return Action::Continue;
+        }
+
         // TRANSCRIPT — dump the full session log to a plain-text file
         if input == "transcript" {
             let path = "neon_descent_transcript.txt";
@@ -257,7 +287,10 @@ impl App {
                 Some(snap) => {
                     save::restore_snapshot(snap, &mut self.player, &mut self.world, &mut self.mob_store, &mut self.daemons);
                     ui::print_plain("[Undone.]");
-                    commands::look(&self.player, &self.world, &self.mob_store);
+                    match self.player.net_node.clone() {
+                        Some(node) => net::look(&self.net, &node, &self.player),
+                        None => commands::look(&self.player, &self.world, &self.mob_store),
+                    }
                 }
             }
             self.drain_to_buf();
@@ -278,6 +311,8 @@ impl App {
             match save::load_from_file() {
                 Ok(snap) => {
                     save::restore_snapshot(snap, &mut self.player, &mut self.world, &mut self.mob_store, &mut self.daemons);
+                    // The old snapshot belongs to the abandoned timeline.
+                    self.undo_snapshot = None;
                     ui::print_plain("Game restored.");
                     if self.player.net_node.is_some() {
                         ui::print_dim("[ link re-established ]");
@@ -306,10 +341,14 @@ impl App {
             input.to_string()
         };
 
-        // Take undo snapshot before mutating state
-        self.undo_snapshot = Some(save::take_snapshot(&self.player, &self.world, &self.mob_store, &self.daemons));
-
         let parsed = parser::parse(&effective);
+
+        // Take undo snapshot before mutating state. Meta commands (SCORE, HELP…)
+        // change nothing, so they must not replace the snapshot of the last
+        // real action — otherwise UNDO after SCORE would silently do nothing.
+        if !commands::is_meta(&parsed.verb) {
+            self.undo_snapshot = Some(save::take_snapshot(&self.player, &self.world, &self.mob_store, &self.daemons));
+        }
         let was_in_net = self.player.net_node.is_some();
         let action = if parsed.verb == "jack" || parsed.verb == "disconnect" {
             // JACK / DISCONNECT transitions need NetStore access — handle here.
@@ -405,12 +444,10 @@ impl App {
 
 /// Verbs that keep their normal (non-net) behaviour even while jacked in.
 fn is_net_meta(verb: &str) -> bool {
-    matches!(verb,
-        "help" | "save" | "restore" | "quit" | "restart" |
-        "objectives" | "score" | "version" | "runtime")
+    commands::is_meta(verb) || matches!(verb, "save" | "restore" | "quit" | "restart")
 }
 
-pub fn new_game() -> (World, Player, MobStore, Ambient) {
+pub fn new_game() -> (World, Player, MobStore, Ambient, DaemonStore) {
     let world = World::load().unwrap_or_else(|e| {
         eprintln!("Failed to load rooms.toml: {}", e);
         std::process::exit(1);
@@ -419,7 +456,11 @@ pub fn new_game() -> (World, Player, MobStore, Ambient) {
         eprintln!("Failed to load mobs.toml: {}", e);
         std::process::exit(1);
     });
+    let daemons = DaemonStore::load().unwrap_or_else(|e| {
+        eprintln!("Failed to load daemons.toml: {}", e);
+        std::process::exit(1);
+    });
     let player  = Player::new("foyer");
     let ambient = Ambient::new();
-    (world, player, mob_store, ambient)
+    (world, player, mob_store, ambient, daemons)
 }

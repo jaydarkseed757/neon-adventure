@@ -68,7 +68,7 @@ A *turn* only advances when the player submits a command — most frames do noth
 7. drain ui buffer → scroll_buf
 ```
 
-Both `commands::handle()` and `net::handle()` return an `Action`: `Continue`, `Quit` (win → `Won` state), `Restart` (new game), or `Exit` (terminate; the `quit` verb). The **win** (`Action::Quit`) now fires only from the net `RETURN` at the upload relay — reaching score 100 in the physical world merely arms the console and nudges the player to jack in.
+Both `commands::handle()` and `net::handle()` return an `Action`: `Continue`, `Quit` (win → `Won` state), `Restart` (new game), or `Exit` (terminate). The `quit` verb itself is intercepted in `app.rs` and asks for Y/N confirmation before returning `Exit`. The **win** (`Action::Quit`) now fires only from the net `RETURN` at the upload relay — reaching score 100 in the physical world merely arms the console and nudges the player to jack in.
 
 ---
 
@@ -289,6 +289,6 @@ cargo build --release     # target/release/neon_descent
 | Net nodes       | 7                           |
 | Mobs            | 6                           |
 | NPCs            | 5                           |
-| Max score       | 100 (arms the net return)   |
+| Max score       | 120 cap (100 arms the return) |
 | Command history | 5                           |
 | Save format     | JSON (`neon_descent.sav`)   |
